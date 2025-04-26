@@ -21,42 +21,147 @@
         // Initialize Supabase client - Replace these with your actual Supabase project details
         const supabaseUrl = 'https://ttkegyxxrkhyxhkaqxyx.supabase.co'; // Actual Supabase URL
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0a2VneXh4cmtoeXhoa2FxeHl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0MTI4NDIsImV4cCI6MjA2MDk4ODg0Mn0.mhyvu0VNzzhHaVlFryXueXl0jR2ruAvhtj8Jpt87ebE'; // Actual public anon key
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
         
-        // Test connection to Supabase
-        async function testSupabaseConnection() {
-            try {
-                const { data, error } = await supabase.auth.getSession();
-                if (error) {
-                    console.error('Supabase connection error:', error.message);
-                } else {
-                    console.log('Connected to Supabase successfully!', data);
-                }
-            } catch (err) {
-                console.error('Unexpected error connecting to Supabase:', err.message);
-            }
-        }
-        
-        // Check if user is already logged in
-        async function checkUser() {
-            const { data: { session } } = await supabase.auth.getSession();
+        // Use a different variable name to avoid conflicts
+        try {
+            const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+            console.log("Supabase initialized successfully");
             
-            if (session) {
-                console.log('User is logged in:', session.user);
-                // You can display user-specific content or hide login forms
-                // showUserContent(session.user);
-            } else {
-                console.log('No user logged in');
-                // You can show login forms or hide user-specific content
-                // showLoginForm();
+            // Test connection to Supabase
+            async function testSupabaseConnection() {
+                try {
+                    const { data, error } = await supabaseClient.auth.getSession();
+                    if (error) {
+                        console.error('Supabase connection error:', error.message);
+                    } else {
+                        console.log('Connected to Supabase successfully!', data);
+                    }
+                } catch (err) {
+                    console.error('Unexpected error connecting to Supabase:', err.message);
+                }
             }
+            
+            // Check if user is already logged in
+            async function checkUser() {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                
+                if (session) {
+                    console.log('User is logged in:', session.user);
+                    // You can display user-specific content or hide login forms
+                    // showUserContent(session.user);
+                } else {
+                    console.log('No user logged in');
+                    // You can show login forms or hide user-specific content
+                    // showLoginForm();
+                }
+            }
+            
+            // Run connection test when page loads
+            window.addEventListener('DOMContentLoaded', function() {
+                testSupabaseConnection();
+                checkUser();
+            });
+
+            // Handle login form submission
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                try {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    
+                    if (error) {
+                        showAuthMessage('loginMessage', error.message, true);
+                    } else {
+                        showAuthMessage('loginMessage', 'Login successful!');
+                        // Close the modal after a short delay
+                        setTimeout(() => {
+                            toggleAuthModal(false);
+                            updateUIForAuthState(true, data.user);
+                        }, 1000);
+                    }
+                } catch (err) {
+                    showAuthMessage('loginMessage', 'An unexpected error occurred.', true);
+                    console.error('Login error:', err);
+                }
+            });
+            
+            // Handle signup form submission
+            document.getElementById('signupForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('signupEmail').value;
+                const password = document.getElementById('signupPassword').value;
+                
+                try {
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email,
+                        password
+                    });
+                    
+                    if (error) {
+                        showAuthMessage('signupMessage', error.message, true);
+                    } else {
+                        showAuthMessage('signupMessage', 'Registration successful! Please check your email for confirmation.');
+                        // Switch back to login after a short delay
+                        setTimeout(() => {
+                            toggleForms('login');
+                        }, 2000);
+                    }
+                } catch (err) {
+                    showAuthMessage('signupMessage', 'An unexpected error occurred.', true);
+                    console.error('Signup error:', err);
+                }
+            });
+            
+            // Handle user logout
+            async function handleLogout() {
+                try {
+                    const { error } = await supabaseClient.auth.signOut();
+                    if (error) {
+                        console.error('Logout error:', error);
+                    } else {
+                        updateUIForAuthState(false);
+                    }
+                } catch (err) {
+                    console.error('Unexpected logout error:', err);
+                }
+            }
+            
+            // Initialize UI based on session check
+            document.addEventListener('DOMContentLoaded', async function() {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                updateUIForAuthState(!!session, session?.user);
+            });
+            
+            // Make handleLogout available globally
+            window.handleLogout = handleLogout;
+            
+        } catch (error) {
+            console.error("Error initializing Supabase:", error);
+            // Show user-friendly error message
+            const warningBanner = document.createElement('div');
+            warningBanner.style.background = '#ffcc00';
+            warningBanner.style.color = '#333';
+            warningBanner.style.padding = '10px';
+            warningBanner.style.textAlign = 'center';
+            warningBanner.textContent = 'Warning: Some features may not be available due to loading issues.';
+            document.body.prepend(warningBanner);
         }
-        
-        // Run connection test when page loads
-        window.addEventListener('DOMContentLoaded', function() {
-            testSupabaseConnection();
-            checkUser();
-        });
+    </script>
+
+    <!-- Error logging for script loading -->
+    <script>
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT') {
+                console.error('Script loading error for:', e.target.src);
+            }
+        }, true);
     </script>
     
     <style>
@@ -1023,92 +1128,21 @@
 
             // Prevent right-click
             document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                return false;
+                // Contextmenu is now allowed
+                return true;
             });
 
-            // Prevent keyboard shortcuts
-            document.addEventListener('keydown', function(e) {
-                // Prevent F12
-                if (e.keyCode === 123) {
-                    e.preventDefault();
-                    return false;
-                }
-                // Prevent Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
-                if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 85)) {
-                    e.preventDefault();
-                    return false;
-                }
-                // Prevent Ctrl+S
-                if (e.ctrlKey && e.keyCode === 83) {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-
-            // Basic authentication check
-            function checkAuth() {
-                const storedAuth = sessionStorage.getItem('authenticated');
-                if (!storedAuth) {
-                    const password = prompt('Please enter access code:');
-                    if (password === 'your_secure_password_here') {  // Change this to your desired password
-                        sessionStorage.setItem('authenticated', 'true');
-                    } else {
-                        document.body.innerHTML = 'Access denied. Invalid password.';
-                    }
-                }
-            }
-
-            // Check authentication on load and periodically
-            window.addEventListener('load', checkAuth);
-            setInterval(checkAuth, 5000);
-
-            // Prevent view-source
-            if (window.location.protocol === 'view-source:') {
-                window.location.href = window.location.href.replace('view-source:', '');
-            }
-
-            // Additional security measures
-            document.onkeypress = function(event) {
-                event = (event || window.event);
-                if (event.keyCode == 123) {
-                    return false;
-                }
-            }
-            document.onmousedown = function(event) {
-                event = (event || window.event);
-                if (event.keyCode == 123) {
-                    return false;
-                }
-            }
-            document.onkeydown = function(event) {
-                event = (event || window.event);
-                if (event.keyCode == 123) {
-                    return false;
-                }
-            }
-
-            // Disable text selection
-            document.onselectstart = function() {
-                return false;
-            }
+            // Security measures removed
+            console.log("Security measures removed for better compatibility");
         })();
     </script>
     <style>
-        /* Prevent text selection */
+        /* Allow text selection */
         * {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-        
-        /* Allow text selection in input fields and textareas */
-        input, textarea {
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-            user-select: text;
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
         }
     </style>
 </head>
@@ -3877,7 +3911,7 @@ Column1,Column2
             const password = document.getElementById('loginPassword').value;
             
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email,
                     password
                 });
@@ -3906,7 +3940,7 @@ Column1,Column2
             const password = document.getElementById('signupPassword').value;
             
             try {
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password
                 });
@@ -3929,7 +3963,7 @@ Column1,Column2
         // Handle user logout
         async function handleLogout() {
             try {
-                const { error } = await supabase.auth.signOut();
+                const { error } = await supabaseClient.auth.signOut();
                 if (error) {
                     console.error('Logout error:', error);
                 } else {
@@ -3989,7 +4023,7 @@ Column1,Column2
         
         // Initialize UI based on session check
         document.addEventListener('DOMContentLoaded', async function() {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             updateUIForAuthState(!!session, session?.user);
         });
     </script>
