@@ -4,6 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LabValid - Method Comparison Tool</title>
+    
+    <!-- DEBUGGING SCRIPT - REMOVE AFTER FIXING ISSUES -->
+    <script>
+        // This script runs immediately to help debug developer tools detection
+        console.log("DEBUG: Page starting to load - " + new Date().toISOString());
+        
+        // Override document.body.innerHTML to catch any attempts to replace the page content
+        const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+        Object.defineProperty(Element.prototype, 'innerHTML', {
+            set: function(value) {
+                console.log("DEBUG: innerHTML being set to:", value.substring(0, 100) + "...");
+                if (value.includes("Developer tools detected") || value.includes("Access denied")) {
+                    console.error("DEBUG: Developer tools detection triggered! Stack trace:", new Error().stack);
+                    // Prevent the page from being replaced
+                    return;
+                }
+                // Otherwise proceed normally
+                return originalInnerHTML.set.call(this, value);
+            },
+            get: function() {
+                return originalInnerHTML.get.call(this);
+            }
+        });
+        
+        // Listen for any resize events that might trigger dev tools detection
+        window.addEventListener('resize', function() {
+            console.log("DEBUG: Window resized - might trigger detection");
+            console.log("DEBUG: outerWidth:", window.outerWidth, "innerWidth:", window.innerWidth);
+            console.log("DEBUG: outerHeight:", window.outerHeight, "innerHeight:", window.innerHeight);
+        });
+        
+        // Monitor intervals that might be checking for dev tools
+        const originalSetInterval = window.setInterval;
+        window.setInterval = function(callback, delay) {
+            console.log("DEBUG: setInterval called with delay:", delay);
+            if (delay === 1000) {
+                console.log("DEBUG: Suspicious interval detected - might be dev tools check");
+                console.log("DEBUG: Stack trace:", new Error().stack);
+            }
+            return originalSetInterval(callback, delay);
+        };
+        
+        // When page loads, check for suspicious inline scripts
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log("DEBUG: Checking for suspicious inline scripts");
+            const scripts = document.querySelectorAll('script:not([src])');
+            scripts.forEach((script, index) => {
+                const content = script.textContent;
+                if (content.includes('devtools') || content.includes('DevTools') || 
+                    content.includes('outerWidth') || content.includes('outerHeight') ||
+                    content.includes('threshold') || content.includes('keyCode') ||
+                    content.includes('detectDevTools') || content.includes('Access denied')) {
+                    console.error(`DEBUG: Found suspicious script #${index}:`, content.substring(0, 150) + "...");
+                }
+            });
+        });
+    </script>
+    
     <!-- Add a simple console log to check if JavaScript is running -->
     <script>
         console.log('Page is loading...');
