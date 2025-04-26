@@ -326,7 +326,7 @@
                                 window.showAuthMessage('resetMessage', 'Processing your request...', false);
                                 
                                 const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
-                                    redirectTo: window.location.origin, // Redirects back to your site after reset
+                                    redirectTo: 'https://labvalid.com', // Use your actual domain instead of localhost
                                 });
                                 
                                 if (error) {
