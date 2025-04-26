@@ -3993,5 +3993,13 @@ Column1,Column2
             updateUIForAuthState(!!session, session?.user);
         });
     </script>
+    <script>
+    window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'SCRIPT') {
+            console.error('Script loading error for:', e.target.src);
+            alert('Failed to load script: ' + e.target.src);
+        }
+    }, true);
+    </script>
 </body>
 </html> 
