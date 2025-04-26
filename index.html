@@ -279,21 +279,38 @@
                             const password = document.getElementById('signupPassword').value;
                             
                             // Verify reCAPTCHA
-                            const recaptchaResponse = grecaptcha.getResponse();
-                            if (!recaptchaResponse) {
-                                window.showAuthMessage('signupMessage', 'Please complete the CAPTCHA verification.', true);
-                                return;
-                            }
-                            
                             try {
+                                // Check if grecaptcha is available
+                                if (typeof grecaptcha === 'undefined') {
+                                    console.error("reCAPTCHA not loaded yet");
+                                    window.showAuthMessage('signupMessage', 'CAPTCHA not loaded. Please refresh the page and try again.', true);
+                                    return;
+                                }
+                                
+                                const recaptchaResponse = grecaptcha.getResponse();
+                                console.log("reCAPTCHA response:", recaptchaResponse ? "obtained" : "empty");
+                                
+                                if (!recaptchaResponse) {
+                                    window.showAuthMessage('signupMessage', 'Please complete the CAPTCHA verification.', true);
+                                    return;
+                                }
+                                
+                                // Reset reCAPTCHA message and show loading state
+                                window.showAuthMessage('signupMessage', 'Creating your account...', false);
+                                
                                 const { data, error } = await window.supabaseClient.auth.signUp({
                                     email,
-                                    password
+                                    password,
+                                    options: {
+                                        captchaToken: recaptchaResponse
+                                    }
                                 });
                                 
                                 if (error) {
+                                    console.error("Signup error:", error);
                                     window.showAuthMessage('signupMessage', error.message, true);
                                 } else {
+                                    console.log("Signup success:", data);
                                     window.showAuthMessage('signupMessage', 'Registration successful! Please check your email for confirmation.');
                                     // Switch back to login after a short delay
                                     setTimeout(() => {
@@ -301,8 +318,8 @@
                                     }, 2000);
                                 }
                             } catch (err) {
-                                window.showAuthMessage('signupMessage', 'An unexpected error occurred.', true);
-                                console.error('Signup error:', err);
+                                console.error('Unexpected error during signup:', err);
+                                window.showAuthMessage('signupMessage', 'An unexpected error occurred: ' + err.message, true);
                             }
                         });
                     }
@@ -1168,6 +1185,40 @@
     
     <!-- Google reCAPTCHA v2 -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    
+    <!-- reCAPTCHA debugging -->
+    <script>
+        // Check if reCAPTCHA is loaded properly
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                try {
+                    if (typeof grecaptcha === 'undefined') {
+                        console.error("reCAPTCHA not loaded");
+                        // Add a manual reload button
+                        const captchaContainers = document.querySelectorAll('.g-recaptcha');
+                        captchaContainers.forEach(container => {
+                            const reloadBtn = document.createElement('button');
+                            reloadBtn.type = 'button';
+                            reloadBtn.textContent = 'Reload CAPTCHA';
+                            reloadBtn.className = 'captcha-reload-btn';
+                            reloadBtn.style.marginTop = '10px';
+                            reloadBtn.style.padding = '5px 10px';
+                            reloadBtn.style.fontSize = '12px';
+                            reloadBtn.onclick = function() {
+                                // Reload the page with a cache-busting parameter
+                                window.location.href = window.location.href.split('?')[0] + '?captcha_reload=' + Date.now();
+                            };
+                            container.parentNode.appendChild(reloadBtn);
+                        });
+                    } else {
+                        console.log("reCAPTCHA loaded successfully");
+                    }
+                } catch (e) {
+                    console.error("Error checking reCAPTCHA:", e);
+                }
+            }, 2000); // Check after 2 seconds to give it time to load
+        });
+    </script>
     
     <!-- Fallback script in case external libraries fail to load -->
     <script>
@@ -4018,7 +4069,7 @@ Column1,Column2
                 
                 <!-- Add reCAPTCHA widget -->
                 <div class="form-group">
-                    <div class="g-recaptcha" data-sitekey="6LfPbiUrAAAAAKSEM2S9GZOmLP5R2hEd-0Ab1Aoe"></div>
+                    <div class="g-recaptcha" data-sitekey="6LfPbiUrAAAAAKSEM2S9GZOmLP5R2hEd-0Ab1Aoe" style="margin: 10px 0;"></div>
                     <div class="captcha-note" style="font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-secondary);">
                         Please complete the CAPTCHA to verify you are human.
                     </div>
