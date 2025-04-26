@@ -82,124 +82,232 @@
         
         // Use a different variable name to avoid conflicts
         try {
-            const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+            // Make this a global variable to avoid "not defined" errors
+            window.supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
             console.log("Supabase initialized successfully");
             
-            // Test connection to Supabase
-            async function testSupabaseConnection() {
-                try {
-                    const { data, error } = await supabaseClient.auth.getSession();
-                    if (error) {
-                        console.error('Supabase connection error:', error.message);
-                    } else {
-                        console.log('Connected to Supabase successfully!', data);
-                    }
-                } catch (err) {
-                    console.error('Unexpected error connecting to Supabase:', err.message);
-                }
-            }
-            
-            // Check if user is already logged in
-            async function checkUser() {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                
-                if (session) {
-                    console.log('User is logged in:', session.user);
-                    // You can display user-specific content or hide login forms
-                    // showUserContent(session.user);
-                } else {
-                    console.log('No user logged in');
-                    // You can show login forms or hide user-specific content
-                    // showLoginForm();
-                }
-            }
-            
-            // Run connection test when page loads
+            // Set up UI functions and event handlers only once DOM is loaded
             window.addEventListener('DOMContentLoaded', function() {
+                // Test Supabase connection
+                async function testSupabaseConnection() {
+                    try {
+                        const { data, error } = await window.supabaseClient.auth.getSession();
+                        if (error) {
+                            console.error('Supabase connection error:', error.message);
+                        } else {
+                            console.log('Connected to Supabase successfully!', data);
+                        }
+                    } catch (err) {
+                        console.error('Unexpected error connecting to Supabase:', err.message);
+                    }
+                }
+                
+                // Check current user session
+                async function checkUser() {
+                    try {
+                        const { data: { session } } = await window.supabaseClient.auth.getSession();
+                        if (session) {
+                            console.log('User is logged in:', session.user);
+                            updateUIForAuthState(true, session.user);
+                        } else {
+                            console.log('No user logged in');
+                            updateUIForAuthState(false);
+                        }
+                    } catch (err) {
+                        console.error('Error checking user session:', err.message);
+                    }
+                }
+                
+                // Initialize UI based on authentication state
+                function updateUIForAuthState(isAuthenticated, user = null) {
+                    const authButton = document.getElementById('authButton');
+                    const userMenu = document.getElementById('userMenu');
+                    
+                    if (!authButton || !userMenu) return; // Elements don't exist yet
+                    
+                    if (isAuthenticated && user) {
+                        // User is logged in
+                        authButton.style.display = 'none';
+                        userMenu.style.display = 'block';
+                        
+                        // Update user details
+                        const userEmail = document.getElementById('userEmail');
+                        const userInitials = document.getElementById('userInitials');
+                        
+                        if (userEmail) userEmail.textContent = user.email;
+                        if (userInitials) userInitials.textContent = user.email.substring(0, 2).toUpperCase();
+                    } else {
+                        // User is logged out
+                        authButton.style.display = 'inline-block';
+                        userMenu.style.display = 'none';
+                    }
+                }
+                
+                // Handle logout
+                window.handleLogout = async function() {
+                    try {
+                        const { error } = await window.supabaseClient.auth.signOut();
+                        if (error) {
+                            console.error('Logout error:', error);
+                        } else {
+                            updateUIForAuthState(false);
+                        }
+                    } catch (err) {
+                        console.error('Unexpected logout error:', err);
+                    }
+                };
+                
+                // Toggle between login and signup forms
+                window.toggleForms = function(form) {
+                    const loginForm = document.getElementById('loginForm');
+                    const signupForm = document.getElementById('signupForm');
+                    
+                    if (!loginForm || !signupForm) return; // Elements don't exist
+                    
+                    if (form === 'login') {
+                        loginForm.style.display = 'flex';
+                        signupForm.style.display = 'none';
+                    } else {
+                        loginForm.style.display = 'none';
+                        signupForm.style.display = 'flex';
+                    }
+                    
+                    // Clear any previous messages
+                    const loginMessage = document.getElementById('loginMessage');
+                    const signupMessage = document.getElementById('signupMessage');
+                    if (loginMessage) loginMessage.style.display = 'none';
+                    if (signupMessage) signupMessage.style.display = 'none';
+                };
+                
+                // Show/hide the auth modal
+                window.toggleAuthModal = function(show) {
+                    const modal = document.getElementById('authModal');
+                    if (!modal) return; // Element doesn't exist
+                    
+                    modal.style.display = show ? 'flex' : 'none';
+                    
+                    // Reset to login form when opening
+                    if (show) {
+                        window.toggleForms('login');
+                    }
+                };
+                
+                // Show an auth message (success or error)
+                window.showAuthMessage = function(elementId, message, isError = false) {
+                    const messageElement = document.getElementById(elementId);
+                    if (!messageElement) return; // Element doesn't exist
+                    
+                    messageElement.textContent = message;
+                    messageElement.style.display = 'block';
+                    
+                    if (isError) {
+                        messageElement.classList.add('error');
+                        messageElement.classList.remove('success');
+                    } else {
+                        messageElement.classList.add('success');
+                        messageElement.classList.remove('error');
+                    }
+                };
+                
+                // Set up event listeners for authentication
+                function setupAuthEventListeners() {
+                    // Auth button click
+                    const authButton = document.getElementById('authButton');
+                    if (authButton) {
+                        authButton.addEventListener('click', function() {
+                            window.toggleAuthModal(true);
+                        });
+                    }
+                    
+                    // User menu button click
+                    const userMenuButton = document.getElementById('userMenuButton');
+                    if (userMenuButton) {
+                        userMenuButton.addEventListener('click', function() {
+                            const dropdown = document.getElementById('userDropdown');
+                            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                        });
+                    }
+                    
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', function(e) {
+                        const userMenu = document.getElementById('userMenu');
+                        const userDropdown = document.getElementById('userDropdown');
+                        if (userMenu && userDropdown && !userMenu.contains(e.target)) {
+                            userDropdown.style.display = 'none';
+                        }
+                    });
+                    
+                    // Login form submit
+                    const loginForm = document.getElementById('loginForm');
+                    if (loginForm) {
+                        loginForm.addEventListener('submit', async function(e) {
+                            e.preventDefault();
+                            
+                            const email = document.getElementById('loginEmail').value;
+                            const password = document.getElementById('loginPassword').value;
+                            
+                            try {
+                                const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                                    email,
+                                    password
+                                });
+                                
+                                if (error) {
+                                    window.showAuthMessage('loginMessage', error.message, true);
+                                } else {
+                                    window.showAuthMessage('loginMessage', 'Login successful!');
+                                    // Close the modal after a short delay
+                                    setTimeout(() => {
+                                        window.toggleAuthModal(false);
+                                        updateUIForAuthState(true, data.user);
+                                    }, 1000);
+                                }
+                            } catch (err) {
+                                window.showAuthMessage('loginMessage', 'An unexpected error occurred.', true);
+                                console.error('Login error:', err);
+                            }
+                        });
+                    }
+                    
+                    // Signup form submit
+                    const signupForm = document.getElementById('signupForm');
+                    if (signupForm) {
+                        signupForm.addEventListener('submit', async function(e) {
+                            e.preventDefault();
+                            
+                            const email = document.getElementById('signupEmail').value;
+                            const password = document.getElementById('signupPassword').value;
+                            
+                            try {
+                                const { data, error } = await window.supabaseClient.auth.signUp({
+                                    email,
+                                    password
+                                });
+                                
+                                if (error) {
+                                    window.showAuthMessage('signupMessage', error.message, true);
+                                } else {
+                                    window.showAuthMessage('signupMessage', 'Registration successful! Please check your email for confirmation.');
+                                    // Switch back to login after a short delay
+                                    setTimeout(() => {
+                                        window.toggleForms('login');
+                                    }, 2000);
+                                }
+                            } catch (err) {
+                                window.showAuthMessage('signupMessage', 'An unexpected error occurred.', true);
+                                console.error('Signup error:', err);
+                            }
+                        });
+                    }
+                }
+                
+                // Run initialization
                 testSupabaseConnection();
                 checkUser();
-            });
-
-            // Handle login form submission
-            document.getElementById('loginForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                
-                try {
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-                    
-                    if (error) {
-                        showAuthMessage('loginMessage', error.message, true);
-                    } else {
-                        showAuthMessage('loginMessage', 'Login successful!');
-                        // Close the modal after a short delay
-                        setTimeout(() => {
-                            toggleAuthModal(false);
-                            updateUIForAuthState(true, data.user);
-                        }, 1000);
-                    }
-                } catch (err) {
-                    showAuthMessage('loginMessage', 'An unexpected error occurred.', true);
-                    console.error('Login error:', err);
-                }
+                setupAuthEventListeners();
             });
             
-            // Handle signup form submission
-            document.getElementById('signupForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('signupEmail').value;
-                const password = document.getElementById('signupPassword').value;
-                
-                try {
-                    const { data, error } = await supabaseClient.auth.signUp({
-                        email,
-                        password
-                    });
-                    
-                    if (error) {
-                        showAuthMessage('signupMessage', error.message, true);
-                    } else {
-                        showAuthMessage('signupMessage', 'Registration successful! Please check your email for confirmation.');
-                        // Switch back to login after a short delay
-                        setTimeout(() => {
-                            toggleForms('login');
-                        }, 2000);
-                    }
-                } catch (err) {
-                    showAuthMessage('signupMessage', 'An unexpected error occurred.', true);
-                    console.error('Signup error:', err);
-                }
-            });
-            
-            // Handle user logout
-            async function handleLogout() {
-                try {
-                    const { error } = await supabaseClient.auth.signOut();
-                    if (error) {
-                        console.error('Logout error:', error);
-                    } else {
-                        updateUIForAuthState(false);
-                    }
-                } catch (err) {
-                    console.error('Unexpected logout error:', err);
-                }
-            }
-            
-            // Initialize UI based on session check
-            document.addEventListener('DOMContentLoaded', async function() {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                updateUIForAuthState(!!session, session?.user);
-            });
-            
-            // Make handleLogout available globally
-            window.handleLogout = handleLogout;
-            
+            // Rest of your existing script...
         } catch (error) {
             console.error("Error initializing Supabase:", error);
             // Show user-friendly error message
@@ -1044,7 +1152,7 @@
             border-bottom: 1px solid var(--border-color);
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" integrity="sha384-Hj+K23VKxacHAQEUo3eeeyiGl6Gak65HYWJc7kqpgFV2JJJJYH7qpO7a3vn+QeiZ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@3.0.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -3908,179 +4016,9 @@ Column1,Column2
     
     <!-- Authentication JavaScript -->
     <script>
-        // Toggle between login and signup forms
-        function toggleForms(form) {
-            const loginForm = document.getElementById('loginForm');
-            const signupForm = document.getElementById('signupForm');
-            
-            if (form === 'login') {
-                loginForm.style.display = 'flex';
-                signupForm.style.display = 'none';
-            } else {
-                loginForm.style.display = 'none';
-                signupForm.style.display = 'flex';
-            }
-            
-            // Clear any previous messages
-            document.getElementById('loginMessage').style.display = 'none';
-            document.getElementById('signupMessage').style.display = 'none';
-        }
-        
-        // Show/hide the auth modal
-        function toggleAuthModal(show) {
-            const modal = document.getElementById('authModal');
-            modal.style.display = show ? 'flex' : 'none';
-            
-            // Reset to login form when opening
-            if (show) {
-                toggleForms('login');
-            }
-        }
-        
-        // Show an auth message (success or error)
-        function showAuthMessage(elementId, message, isError = false) {
-            const messageElement = document.getElementById(elementId);
-            messageElement.textContent = message;
-            messageElement.style.display = 'block';
-            
-            if (isError) {
-                messageElement.classList.add('error');
-                messageElement.classList.remove('success');
-            } else {
-                messageElement.classList.add('success');
-                messageElement.classList.remove('error');
-            }
-        }
-        
-        // Handle login form submission
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email,
-                    password
-                });
-                
-                if (error) {
-                    showAuthMessage('loginMessage', error.message, true);
-                } else {
-                    showAuthMessage('loginMessage', 'Login successful!');
-                    // Close the modal after a short delay
-                    setTimeout(() => {
-                        toggleAuthModal(false);
-                        updateUIForAuthState(true, data.user);
-                    }, 1000);
-                }
-            } catch (err) {
-                showAuthMessage('loginMessage', 'An unexpected error occurred.', true);
-                console.error('Login error:', err);
-            }
-        });
-        
-        // Handle signup form submission
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            
-            try {
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password
-                });
-                
-                if (error) {
-                    showAuthMessage('signupMessage', error.message, true);
-                } else {
-                    showAuthMessage('signupMessage', 'Registration successful! Please check your email for confirmation.');
-                    // Switch back to login after a short delay
-                    setTimeout(() => {
-                        toggleForms('login');
-                    }, 2000);
-                }
-            } catch (err) {
-                showAuthMessage('signupMessage', 'An unexpected error occurred.', true);
-                console.error('Signup error:', err);
-            }
-        });
-        
-        // Handle user logout
-        async function handleLogout() {
-            try {
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) {
-                    console.error('Logout error:', error);
-                } else {
-                    updateUIForAuthState(false);
-                }
-            } catch (err) {
-                console.error('Unexpected logout error:', err);
-            }
-        }
-        
-        // Update UI based on authentication state
-        function updateUIForAuthState(isAuthenticated, user = null) {
-            const authButton = document.getElementById('authButton');
-            const userMenu = document.getElementById('userMenu');
-            
-            if (isAuthenticated && user) {
-                // User is logged in
-                authButton.style.display = 'none';
-                userMenu.style.display = 'block';
-                
-                // Update user details
-                document.getElementById('userEmail').textContent = user.email;
-                
-                // Set user initials
-                const initials = user.email.substring(0, 2).toUpperCase();
-                document.getElementById('userInitials').textContent = initials;
-                
-                // You can enable premium features here if needed
-                // enablePremiumFeatures();
-            } else {
-                // User is logged out
-                authButton.style.display = 'inline-block';
-                userMenu.style.display = 'none';
-                
-                // You can disable premium features here if needed
-                // disablePremiumFeatures();
-            }
-        }
-        
-        // Toggle user dropdown menu
-        document.getElementById('userMenuButton').addEventListener('click', function() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        });
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!document.getElementById('userMenu').contains(e.target)) {
-                document.getElementById('userDropdown').style.display = 'none';
-            }
-        });
-        
-        // Add click event to the auth button
-        document.getElementById('authButton').addEventListener('click', function() {
-            toggleAuthModal(true);
-        });
-        
-        // Initialize UI based on session check
-        document.addEventListener('DOMContentLoaded', async function() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            updateUIForAuthState(!!session, session?.user);
-        });
-    </script>
-    <script>
     window.addEventListener('error', function(e) {
         if (e.target.tagName === 'SCRIPT') {
             console.error('Script loading error for:', e.target.src);
-            alert('Failed to load script: ' + e.target.src);
         }
     }, true);
     </script>
