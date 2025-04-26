@@ -161,22 +161,31 @@
                 window.toggleForms = function(form) {
                     const loginForm = document.getElementById('loginForm');
                     const signupForm = document.getElementById('signupForm');
+                    const resetPasswordForm = document.getElementById('resetPasswordForm');
                     
-                    if (!loginForm || !signupForm) return; // Elements don't exist
+                    if (!loginForm || !signupForm || !resetPasswordForm) return; // Elements don't exist
                     
+                    // Hide all forms first
+                    loginForm.style.display = 'none';
+                    signupForm.style.display = 'none';
+                    resetPasswordForm.style.display = 'none';
+                    
+                    // Show the requested form
                     if (form === 'login') {
                         loginForm.style.display = 'flex';
-                        signupForm.style.display = 'none';
-                    } else {
-                        loginForm.style.display = 'none';
+                    } else if (form === 'signup') {
                         signupForm.style.display = 'flex';
+                    } else if (form === 'resetPassword') {
+                        resetPasswordForm.style.display = 'flex';
                     }
                     
                     // Clear any previous messages
                     const loginMessage = document.getElementById('loginMessage');
                     const signupMessage = document.getElementById('signupMessage');
+                    const resetMessage = document.getElementById('resetMessage');
                     if (loginMessage) loginMessage.style.display = 'none';
                     if (signupMessage) signupMessage.style.display = 'none';
+                    if (resetMessage) resetMessage.style.display = 'none';
                 };
                 
                 // Show/hide the auth modal
@@ -279,13 +288,6 @@
                             const password = document.getElementById('signupPassword').value;
                             
                             try {
-                                // Verify reCAPTCHA (standard implementation)
-                                const recaptchaResponse = grecaptcha.getResponse();
-                                if (!recaptchaResponse) {
-                                    window.showAuthMessage('signupMessage', 'Please complete the CAPTCHA verification.', true);
-                                    return;
-                                }
-                                
                                 // Show loading state
                                 window.showAuthMessage('signupMessage', 'Creating your account...', false);
                                 
@@ -308,9 +310,35 @@
                             } catch (err) {
                                 console.error('Unexpected error during signup:', err);
                                 window.showAuthMessage('signupMessage', 'An unexpected error occurred: ' + err.message, true);
-                            } finally {
-                                // Reset reCAPTCHA
-                                grecaptcha.reset();
+                            }
+                        });
+                    }
+                    
+                    // Reset password form submit
+                    const resetPasswordForm = document.getElementById('resetPasswordForm');
+                    if (resetPasswordForm) {
+                        resetPasswordForm.addEventListener('submit', async function(e) {
+                            e.preventDefault();
+                            
+                            const email = document.getElementById('resetEmail').value;
+                            
+                            try {
+                                window.showAuthMessage('resetMessage', 'Processing your request...', false);
+                                
+                                const { error } = await window.supabaseClient.auth.resetPasswordForEmail(email, {
+                                    redirectTo: window.location.origin, // Redirects back to your site after reset
+                                });
+                                
+                                if (error) {
+                                    console.error("Password reset error:", error);
+                                    window.showAuthMessage('resetMessage', error.message, true);
+                                } else {
+                                    window.showAuthMessage('resetMessage', 'Check your email for password reset instructions!');
+                                    // Keep the message visible so user can read it
+                                }
+                            } catch (err) {
+                                console.error('Password reset error:', err);
+                                window.showAuthMessage('resetMessage', 'An unexpected error occurred.', true);
                             }
                         });
                     }
@@ -1173,9 +1201,6 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-    
-    <!-- Google reCAPTCHA v2 - Standard Implementation -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     
     <!-- Removed reCAPTCHA script to fix signup issues -->
     
@@ -4009,6 +4034,9 @@ Column1,Column2
                 </div>
                 <button type="submit">Login</button>
                 <div class="auth-toggle">
+                    <div style="margin-bottom: 10px;">
+                        <a onclick="toggleForms('resetPassword')" style="cursor: pointer; color: var(--primary-color);">Forgot Password?</a>
+                    </div>
                     Don't have an account? <a onclick="toggleForms('signup')">Sign Up</a>
                 </div>
                 <div class="auth-message" id="loginMessage"></div>
@@ -4026,19 +4054,29 @@ Column1,Column2
                     <input type="password" id="signupPassword" required placeholder="••••••••">
                 </div>
                 
-                <!-- Add reCAPTCHA widget with standard implementation -->
-                <div class="form-group">
-                    <div class="g-recaptcha" data-sitekey="6LfPbiUrAAAAAKSEM2S9GZOmLP5R2hEd-0Ab1Aoe" style="margin: 10px 0;"></div>
-                    <div class="captcha-note" style="font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-secondary);">
-                        Please complete the CAPTCHA to verify you are human.
-                    </div>
-                </div>
+                <!-- reCAPTCHA removed due to technical issues -->
                 
                 <button type="submit">Create Account</button>
                 <div class="auth-toggle">
                     Already have an account? <a onclick="toggleForms('login')">Login</a>
                 </div>
                 <div class="auth-message" id="signupMessage"></div>
+            </form>
+            
+            <!-- Password Reset Form -->
+            <form id="resetPasswordForm" class="auth-form" style="display: none;">
+                <h2>Reset Your Password</h2>
+                <p style="text-align: center; margin-bottom: 20px;">Enter your email address and we'll send you instructions to reset your password.</p>
+                <div class="form-group">
+                    <label for="resetEmail">Email</label>
+                    <input type="email" id="resetEmail" required placeholder="your@email.com">
+                </div>
+                
+                <button type="submit">Send Reset Instructions</button>
+                <div class="auth-toggle">
+                    <a onclick="toggleForms('login')">Back to Login</a>
+                </div>
+                <div class="auth-message" id="resetMessage"></div>
             </form>
         </div>
     </div>
