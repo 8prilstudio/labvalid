@@ -278,17 +278,8 @@
                             const email = document.getElementById('signupEmail').value;
                             const password = document.getElementById('signupPassword').value;
                             
-                            // Verify reCAPTCHA
                             try {
-                                // Use the standard reCAPTCHA response function
-                                const recaptchaResponse = grecaptcha.getResponse();
-                                
-                                if (!recaptchaResponse) {
-                                    window.showAuthMessage('signupMessage', 'Please complete the CAPTCHA verification.', true);
-                                    return;
-                                }
-                                
-                                // Reset reCAPTCHA message and show loading state
+                                // Show loading state
                                 window.showAuthMessage('signupMessage', 'Creating your account...', false);
                                 
                                 const { data, error } = await window.supabaseClient.auth.signUp({
@@ -1173,8 +1164,7 @@
     <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     
-    <!-- Google reCAPTCHA v2 -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <!-- Removed reCAPTCHA script to fix signup issues -->
     
     <!-- Fallback script in case external libraries fail to load -->
     <script>
@@ -4023,13 +4013,7 @@ Column1,Column2
                     <input type="password" id="signupPassword" required placeholder="••••••••">
                 </div>
                 
-                <!-- Add reCAPTCHA widget -->
-                <div class="form-group">
-                    <div class="g-recaptcha" data-sitekey="6LfPbiUrAAAAAKSEM2S9GZOmLP5R2hEd-0Ab1Aoe" style="margin: 10px 0;"></div>
-                    <div class="captcha-note" style="font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-secondary);">
-                        Please complete the CAPTCHA to verify you are human.
-                    </div>
-                </div>
+                <!-- Removed reCAPTCHA temporarily to fix signup -->
                 
                 <button type="submit">Create Account</button>
                 <div class="auth-toggle">
