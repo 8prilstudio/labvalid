@@ -280,15 +280,9 @@
                             
                             // Verify reCAPTCHA
                             try {
-                                // Check if grecaptcha is available
-                                if (typeof grecaptcha === 'undefined') {
-                                    console.error("reCAPTCHA not loaded yet");
-                                    window.showAuthMessage('signupMessage', 'CAPTCHA not loaded. Please refresh the page and try again.', true);
-                                    return;
-                                }
-                                
-                                const recaptchaResponse = grecaptcha.getResponse();
-                                console.log("reCAPTCHA response:", recaptchaResponse ? "obtained" : "empty");
+                                // Get the reCAPTCHA response from our hidden field
+                                const recaptchaResponse = document.getElementById('captcha-response').value;
+                                console.log("reCAPTCHA response from hidden field:", recaptchaResponse ? "obtained" : "empty");
                                 
                                 if (!recaptchaResponse) {
                                     window.showAuthMessage('signupMessage', 'Please complete the CAPTCHA verification.', true);
@@ -1184,39 +1178,60 @@
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     
     <!-- Google reCAPTCHA v2 -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoaded&render=explicit" async defer></script>
     
     <!-- reCAPTCHA debugging -->
     <script>
-        // Check if reCAPTCHA is loaded properly
+        // Initialize reCAPTCHA when the API loads
+        window.onRecaptchaLoaded = function() {
+            try {
+                console.log("reCAPTCHA API loaded successfully");
+                // Render the reCAPTCHA manually for more control
+                if (document.querySelector('.g-recaptcha')) {
+                    grecaptcha.render('recaptcha-container', {
+                        'sitekey': '6LfPbiUrAAAAAKSEM2S9GZOmLP5R2hEd-0Ab1Aoe',
+                        'callback': function(response) {
+                            console.log("reCAPTCHA verified: response received");
+                            document.getElementById('captcha-response').value = response;
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Error initializing reCAPTCHA:", e);
+            }
+        };
+
+        // Check if reCAPTCHA loaded
         window.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 try {
-                    if (typeof grecaptcha === 'undefined') {
-                        console.error("reCAPTCHA not loaded");
+                    if (typeof grecaptcha === 'undefined' || !document.querySelector('.g-recaptcha-response')) {
+                        console.log("reCAPTCHA not fully loaded after 2 seconds");
+                        
                         // Add a manual reload button
-                        const captchaContainers = document.querySelectorAll('.g-recaptcha');
+                        const captchaContainers = document.querySelectorAll('#recaptcha-container');
                         captchaContainers.forEach(container => {
-                            const reloadBtn = document.createElement('button');
-                            reloadBtn.type = 'button';
-                            reloadBtn.textContent = 'Reload CAPTCHA';
-                            reloadBtn.className = 'captcha-reload-btn';
-                            reloadBtn.style.marginTop = '10px';
-                            reloadBtn.style.padding = '5px 10px';
-                            reloadBtn.style.fontSize = '12px';
-                            reloadBtn.onclick = function() {
-                                // Reload the page with a cache-busting parameter
-                                window.location.href = window.location.href.split('?')[0] + '?captcha_reload=' + Date.now();
-                            };
-                            container.parentNode.appendChild(reloadBtn);
+                            if (!container.querySelector('.captcha-reload-btn')) {
+                                const reloadBtn = document.createElement('button');
+                                reloadBtn.type = 'button';
+                                reloadBtn.textContent = 'Reload CAPTCHA';
+                                reloadBtn.className = 'captcha-reload-btn';
+                                reloadBtn.style.marginTop = '10px';
+                                reloadBtn.style.padding = '5px 10px';
+                                reloadBtn.style.fontSize = '12px';
+                                reloadBtn.onclick = function() {
+                                    window.location.reload();
+                                };
+                                container.appendChild(reloadBtn);
+                            }
                         });
                     } else {
-                        console.log("reCAPTCHA loaded successfully");
+                        console.log("reCAPTCHA loaded successfully and ready");
                     }
                 } catch (e) {
                     console.error("Error checking reCAPTCHA:", e);
                 }
-            }, 2000); // Check after 2 seconds to give it time to load
+            }, 2000);
         });
     </script>
     
@@ -4069,7 +4084,8 @@ Column1,Column2
                 
                 <!-- Add reCAPTCHA widget -->
                 <div class="form-group">
-                    <div class="g-recaptcha" data-sitekey="6LfPbiUrAAAAAKSEM2S9GZOmLP5R2hEd-0Ab1Aoe" style="margin: 10px 0;"></div>
+                    <div id="recaptcha-container" class="g-recaptcha" style="margin: 10px 0;"></div>
+                    <input type="hidden" id="captcha-response" name="g-recaptcha-response">
                     <div class="captcha-note" style="font-size: 0.8rem; margin-top: 0.25rem; color: var(--text-secondary);">
                         Please complete the CAPTCHA to verify you are human.
                     </div>
