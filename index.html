@@ -151,6 +151,11 @@
                 // Function to fetch token balance
                 async function fetchTokenBalance(userId) {
                     try {
+                        if (!userId) {
+                            console.error('Error fetching tokens: No user ID provided');
+                            return;
+                        }
+                        
                         const { data, error } = await window.supabaseClient
                             .from('user_tokens')
                             .select('tokens')
@@ -158,7 +163,7 @@
                             .single();
                         
                         if (error) {
-                            console.error('Error fetching tokens:', error);
+                            console.error('Error fetching tokens:', error.message, error.details, error.hint);
                             return;
                         }
                         
@@ -179,11 +184,12 @@
                     try {
                         const initialTokens = 5; // Start with 5 free tokens
                         
+                        // Use upsert operation instead of insert to handle potential duplicates
                         const { data, error } = await window.supabaseClient
                             .from('user_tokens')
-                            .insert([
+                            .upsert([
                                 { user_id: userId, tokens: initialTokens }
-                            ])
+                            ], { onConflict: 'user_id' })
                             .select();
                         
                         if (error) {
