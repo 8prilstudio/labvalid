@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LabValid - Method Comparison Tool</title>
@@ -456,21 +456,9 @@
             position: relative;
         }
 
-        .logo-container {
+        .header-buttons {
             display: flex;
             align-items: center;
-            justify-content: center;
-            flex: 1;
-        }
-
-        .header-left {
-            flex: 0 0 150px; /* Fixed width for left side */
-        }
-        
-        .header-right {
-            flex: 0 0 150px; /* Fixed width for right side */
-            display: flex;
-            justify-content: flex-end;
         }
 
         .about-button {
@@ -486,6 +474,13 @@
 
         .about-button:hover {
             background-color: #008c8c;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
         }
         
         .logo {
@@ -1187,22 +1182,11 @@
         
         .login-button {
             background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s, transform 0.2s;
-            min-width: 90px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-            font-weight: 600;
+            margin-left: 0.5rem;
         }
         
         .login-button:hover {
             background-color: #142b4e;
-            transform: translateY(-2px);
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
         }
         
         .auth-message {
@@ -1256,6 +1240,21 @@
             font-weight: 600;
             border-bottom: 1px solid var(--border-color);
         }
+
+        .user-button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .user-button:hover {
+            background-color: #142b4e;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1291,17 +1290,6 @@
             }
         }
 
-        function toggleAbout() {
-            const overlay = document.getElementById('aboutOverlay');
-            if (overlay.style.display === 'block') {
-                overlay.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            } else {
-                overlay.style.display = 'block';
-                document.body.style.overflow = 'hidden';
-            }
-        }
-
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
             // Info modal listeners
@@ -1311,24 +1299,14 @@
                 }
             });
 
-            // About modal listeners
-            document.getElementById('aboutOverlay').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    toggleAbout();
-                }
-            });
-
             // Global escape key listener
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     const infoOverlay = document.getElementById('infoOverlay');
-                    const aboutOverlay = document.getElementById('aboutOverlay');
+                    
                     
                     if (infoOverlay.style.display === 'flex') {
                         toggleInfo();
-                    }
-                    if (aboutOverlay.style.display === 'flex') {
-                        toggleAbout();
                     }
                 }
             });
@@ -1409,8 +1387,8 @@
             user-select: auto;
         }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <noscript>
         <div style="background:red;color:white;padding:20px;text-align:center;margin:20px;">
             <h2>JavaScript is Required</h2>
@@ -1419,19 +1397,14 @@
     </noscript>
     <div class="container">
         <div class="header">
-            <div class="header-left">
-                <button class="about-button" onclick="toggleAbout()">About</button>
-            </div>
-            
             <div class="logo-container">
                 <!-- Add fallback for logo in case path is an issue -->
                 <img src="LabValid-Logo(2).png" alt="LabValid Logo" class="logo" onerror="this.onerror=null; this.src=''; this.alt='Logo not found'; console.error('Logo image failed to load');">
             </div>
-            
-            <div class="header-right">
+            <div class="header-buttons">
                 <button class="login-button" id="authButton">Login</button>
                 <div class="user-menu" id="userMenu">
-                    <button class="about-button" id="userMenuButton">
+                    <button class="user-button" id="userMenuButton">
                         <span id="userInitials">AA</span>
                     </button>
                     <div class="user-dropdown" id="userDropdown">
@@ -1488,51 +1461,6 @@
             </div>
         </div>
 
-        <div id="aboutOverlay" class="modal-overlay">
-            <div class="modal-content">
-                <button class="modal-close" onclick="toggleAbout()">&times;</button>
-                <h2>About LabValid</h2>
-                <p>LabValid is a powerful tool designed for laboratory method comparison studies. It helps validate new analytical methods against established reference methods by providing comprehensive statistical analysis and visualization.</p>
-                
-                <div class="feature-grid">
-                    <div class="feature-item">
-                        <h3>Passing-Bablok Regression</h3>
-                        <p>Non-parametric regression analysis that helps determine systematic and proportional differences between methods.</p>
-                    </div>
-                    <div class="feature-item">
-                        <h3>Bland-Altman Analysis</h3>
-                        <p>Evaluates agreement between two measurement methods by plotting differences against means.</p>
-                    </div>
-                    <div class="feature-item">
-                        <h3>CUSUM Test</h3>
-                        <p>Assesses the linearity of the relationship between methods.</p>
-                    </div>
-                    <div class="feature-item">
-                        <h3>Statistical Reports</h3>
-                        <p>Generate comprehensive reports with statistical parameters and interpretations.</p>
-                    </div>
-                </div>
-
-                <h3>How to Use</h3>
-                <ol>
-                    <li>Upload your Excel file containing paired measurements from both methods.</li>
-                    <li>Select the columns containing your reference and test method values.</li>
-                    <li>Click "Analyze" to generate comprehensive statistical analysis.</li>
-                    <li>Review the results, including regression parameters, correlation, and agreement measures.</li>
-                    <li>Export your results as images or a complete Word document report.</li>
-                </ol>
-
-                <h3>Interpreting Results</h3>
-                <p>Key parameters to consider:</p>
-                <ul>
-                    <li><strong>Slope:</strong> Ideally close to 1, indicates proportional differences</li>
-                    <li><strong>Intercept:</strong> Ideally close to 0, indicates systematic differences</li>
-                    <li><strong>Correlation:</strong> Measures strength of linear relationship</li>
-                    <li><strong>Bland-Altman Limits:</strong> Shows agreement between methods</li>
-                </ul>
-            </div>
-        </div>
-        
         <div class="card">
             <div class="section-header">
                 <h2>Upload Data</h2>
@@ -3807,31 +3735,6 @@ Column1,Column2
                 }
             });
 
-            function toggleAbout() {
-                const overlay = document.getElementById('aboutOverlay');
-                if (overlay.style.display === 'block') {
-                    overlay.style.display = 'none';
-                    document.body.style.overflow = 'auto';
-                } else {
-                    overlay.style.display = 'block';
-                    document.body.style.overflow = 'hidden';
-                }
-            }
-
-            // Add click outside listener for about modal
-            document.getElementById('aboutOverlay').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    toggleAbout();
-                }
-            });
-
-            // Add escape key listener for about modal
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && document.getElementById('aboutOverlay').style.display === 'block') {
-                    toggleAbout();
-                }
-            });
-
             // Add function to toggle example sections
             function toggleExample() {
                 const exampleButton = document.querySelector('.example-button');
@@ -4162,5 +4065,5 @@ Column1,Column2
         }
     }, true);
     </script>
-</body>
-</html> 
+  </body>
+</html>
