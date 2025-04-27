@@ -224,38 +224,27 @@
                         
                         const userId = session.user.id;
                         
-                        // First get current token balance
-                        const { data: tokenData, error: fetchError } = await window.supabaseClient
-                            .from('user_tokens')
-                            .select('tokens')
-                            .eq('user_id', userId)
-                            .single();
-                        
-                        if (fetchError) {
-                            console.error('Error fetching token balance:', fetchError);
-                            return false;
+                        // Check if we're in fallback mode
+                        if (window.userTokenBalance !== undefined) {
+                            // We're in fallback mode, use in-memory tokens
+                            if (window.userTokenBalance < 1) {
+                                alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
+                                return false;
+                            }
+                            
+                            // Deduct token
+                            window.userTokenBalance--;
+                            
+                            // Try to update localStorage as well
+                            try {
+                                localStorage.setItem(`tokenBalance_${userId}`, window.userTokenBalance);
+                            } catch (e) {
+                                console.warn('Could not save to localStorage:', e);
+                            }
+                            
+                            // Update display
+                            updateTokenDisplay(window.userTokenBalance);
                         }
-                        
-                        if (!tokenData || tokenData.tokens < 1) {
-                            alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
-                            return false;
-                        }
-                        
-                        // Update token balance
-                        const newBalance = tokenData.tokens - 1;
-                        const { error: updateError } = await window.supabaseClient
-                            .from('user_tokens')
-                            .update({ tokens: newBalance })
-                            .eq('user_id', userId);
-                        
-                        if (updateError) {
-                            console.error('Error updating token balance:', updateError);
-                            return false;
-                        }
-                        
-                        // Update display
-                        updateTokenDisplay(newBalance);
-                        return true;
                     } catch (err) {
                         console.error('Unexpected error during token deduction:', err);
                         return false;
@@ -4524,5 +4513,7 @@ Column1,Column2
     </div>
     
     <div class="card">
+    <!-- Token system fix script -->
+    <script src="token-fix.js"></script>
 </body>
 </html>
