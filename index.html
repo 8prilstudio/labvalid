@@ -138,10 +138,121 @@
                         
                         if (userEmail) userEmail.textContent = user.email;
                         if (userInitials) userInitials.textContent = user.email.substring(0, 2).toUpperCase();
+                        
+                        // Fetch and update token balance
+                        fetchTokenBalance(user.id);
                     } else {
                         // User is logged out
                         authButton.style.display = 'inline-block';
                         userMenu.style.display = 'none';
+                    }
+                }
+                
+                // Function to fetch token balance
+                async function fetchTokenBalance(userId) {
+                    try {
+                        const { data, error } = await window.supabaseClient
+                            .from('user_tokens')
+                            .select('tokens')
+                            .eq('user_id', userId)
+                            .single();
+                        
+                        if (error) {
+                            console.error('Error fetching tokens:', error);
+                            return;
+                        }
+                        
+                        if (data) {
+                            updateTokenDisplay(data.tokens);
+                        } else {
+                            // No token record exists yet
+                            console.log('No token record found for user, creating one...');
+                            createInitialTokenBalance(userId);
+                        }
+                    } catch (err) {
+                        console.error('Unexpected error fetching token balance:', err);
+                    }
+                }
+                
+                // Function to create initial token balance
+                async function createInitialTokenBalance(userId) {
+                    try {
+                        const initialTokens = 5; // Start with 5 free tokens
+                        
+                        const { data, error } = await window.supabaseClient
+                            .from('user_tokens')
+                            .insert([
+                                { user_id: userId, tokens: initialTokens }
+                            ])
+                            .select();
+                        
+                        if (error) {
+                            console.error('Error creating initial token balance:', error);
+                            return;
+                        }
+                        
+                        console.log('Initial token balance created:', data);
+                        updateTokenDisplay(initialTokens);
+                    } catch (err) {
+                        console.error('Unexpected error creating token balance:', err);
+                    }
+                }
+                
+                // Function to update token display
+                function updateTokenDisplay(tokenCount) {
+                    const tokenBalance = document.getElementById('tokenBalance');
+                    if (tokenBalance) {
+                        tokenBalance.textContent = tokenCount;
+                    }
+                }
+                
+                // Function to deduct tokens
+                async function deductToken() {
+                    try {
+                        const { data: { session } } = await window.supabaseClient.auth.getSession();
+                        
+                        if (!session) {
+                            console.error('No user session found');
+                            return false;
+                        }
+                        
+                        const userId = session.user.id;
+                        
+                        // First get current token balance
+                        const { data: tokenData, error: fetchError } = await window.supabaseClient
+                            .from('user_tokens')
+                            .select('tokens')
+                            .eq('user_id', userId)
+                            .single();
+                        
+                        if (fetchError) {
+                            console.error('Error fetching token balance:', fetchError);
+                            return false;
+                        }
+                        
+                        if (!tokenData || tokenData.tokens < 1) {
+                            alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
+                            return false;
+                        }
+                        
+                        // Update token balance
+                        const newBalance = tokenData.tokens - 1;
+                        const { error: updateError } = await window.supabaseClient
+                            .from('user_tokens')
+                            .update({ tokens: newBalance })
+                            .eq('user_id', userId);
+                        
+                        if (updateError) {
+                            console.error('Error updating token balance:', updateError);
+                            return false;
+                        }
+                        
+                        // Update display
+                        updateTokenDisplay(newBalance);
+                        return true;
+                    } catch (err) {
+                        console.error('Unexpected error during token deduction:', err);
+                        return false;
                     }
                 }
                 
@@ -339,6 +450,16 @@
                                     hcaptcha.reset();
                                 } else {
                                     console.log("Signup success:", data);
+                                    
+                                    // Create initial token balance if user is created
+                                    if (data.user && data.user.id) {
+                                        try {
+                                            await createInitialTokenBalance(data.user.id);
+                                        } catch (err) {
+                                            console.error("Error setting up initial tokens:", err);
+                                        }
+                                    }
+                                    
                                     window.showAuthMessage('signupMessage', 'Registration successful! Please check your email for confirmation.');
                                     // Switch back to login after a short delay
                                     setTimeout(() => {
@@ -386,7 +507,71 @@
                 testSupabaseConnection();
                 checkUser();
                 setupAuthEventListeners();
+                setupTokenPurchaseListeners();
             });
+            
+            function setupTokenPurchaseListeners() {
+                const purchaseButton = document.getElementById('purchaseButton');
+                if (purchaseButton) {
+                    purchaseButton.addEventListener('click', async function() {
+                        if (!window.selectedTokenPackage || window.selectedTokenPackage <= 0) return;
+                        
+                        try {
+                            const { data: { session } } = await window.supabaseClient.auth.getSession();
+                            
+                            if (!session) {
+                                console.error('No user session found');
+                                alert('Please log in to purchase tokens');
+                                window.closeTokenPurchaseModal();
+                                return;
+                            }
+                            
+                            // In a real app, this would connect to a payment system
+                            // For this demo, we'll simply add the tokens directly
+                            
+                            // First, get current tokens
+                            const { data: tokenData, error: fetchError } = await window.supabaseClient
+                                .from('user_tokens')
+                                .select('tokens')
+                                .eq('user_id', session.user.id)
+                                .single();
+                            
+                            if (fetchError) {
+                                console.error('Error fetching token balance:', fetchError);
+                                alert('Error processing purchase. Please try again.');
+                                return;
+                            }
+                            
+                            // Update token balance
+                            const currentTokens = tokenData ? tokenData.tokens : 0;
+                            const newBalance = currentTokens + window.selectedTokenPackage;
+                            
+                            const { error: updateError } = await window.supabaseClient
+                                .from('user_tokens')
+                                .update({ tokens: newBalance })
+                                .eq('user_id', session.user.id);
+                            
+                            if (updateError) {
+                                console.error('Error updating token balance:', updateError);
+                                alert('Error processing purchase. Please try again.');
+                                return;
+                            }
+                            
+                            // Update display
+                            updateTokenDisplay(newBalance);
+                            
+                            // Show success message
+                            alert(`Successfully purchased ${window.selectedTokenPackage} tokens!`);
+                            
+                            // Close modal
+                            window.closeTokenPurchaseModal();
+                        } catch (err) {
+                            console.error('Unexpected error during token purchase:', err);
+                            alert('Error processing purchase. Please try again.');
+                        }
+                    });
+                }
+            }
             
             // Rest of your existing script...
         } catch (error) {
@@ -1226,19 +1411,30 @@
         }
         
         .user-dropdown-item {
-            padding: 0.75rem 1rem;
+            padding: 10px 15px;
             cursor: pointer;
-            transition: background-color 0.2s;
-            white-space: nowrap;
-        }
-        
-        .user-dropdown-item:hover {
-            background-color: var(--background-color);
-        }
-        
-        .user-email {
-            font-weight: 600;
             border-bottom: 1px solid var(--border-color);
+        }
+        
+        .user-dropdown-item:hover:not(.user-email):not(.tokens-display) {
+            background-color: #f5f5f5;
+        }
+        
+        .user-email, .tokens-display {
+            cursor: default;
+            font-weight: 500;
+        }
+        
+        .tokens-display {
+            color: var(--secondary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #tokenBalance {
+            font-weight: bold;
+            color: var(--primary-color);
         }
 
         .user-button {
@@ -1254,6 +1450,111 @@
         
         .user-button:hover {
             background-color: #142b4e;
+        }
+
+        .small-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 16px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .small-button:hover {
+            background-color: #008c8c;
+        }
+        
+        /* Token Purchase Modal Styles */
+        .token-packages {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        
+        .token-package {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            width: 120px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .token-package:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-5px);
+        }
+        
+        .token-package.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(30, 174, 174, 0.1);
+        }
+        
+        .token-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        
+        .token-price {
+            font-size: 18px;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+        
+        .token-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .token-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: var(--accent-color);
+            color: white;
+            font-size: 12px;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .token-purchase-footer {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .purchase-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .purchase-button:hover:not(:disabled) {
+            background-color: #008c8c;
+        }
+        
+        .purchase-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
@@ -1409,6 +1710,10 @@
                     </button>
                     <div class="user-dropdown" id="userDropdown">
                         <div class="user-dropdown-item user-email" id="userEmail">user@example.com</div>
+                        <div class="user-dropdown-item tokens-display">
+                            Tokens: <span id="tokenBalance">0</span>
+                            <button class="small-button" onclick="showTokenPurchaseModal()">+</button>
+                        </div>
                         <div class="user-dropdown-item" onclick="handleLogout()">Logout</div>
                     </div>
                 </div>
@@ -1903,7 +2208,31 @@ Column1,Column2
                     alert('Please select different columns for analysis.');
                     return;
                 }
-
+                
+                // Check if user is logged in
+                window.supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+                    if (!session) {
+                        alert('Please log in to perform analysis.');
+                        window.toggleAuthModal(true);
+                        return;
+                    }
+                    
+                    // Deduct token for analysis
+                    const tokenDeducted = await deductToken();
+                    if (!tokenDeducted) {
+                        return; // Don't proceed if token deduction failed
+                    }
+                    
+                    // Continue with analysis
+                    performAnalysis(currentColumn, newColumn);
+                }).catch(err => {
+                    console.error('Error checking session:', err);
+                    alert('An error occurred while checking your session. Please try again.');
+                });
+            }
+            
+            // Split out the actual analysis logic to a separate function
+            function performAnalysis(currentColumn, newColumn) {
                 try {
                     // Create paired data array
                     const pairedData = excelData.map(row => ({
@@ -1976,6 +2305,13 @@ Column1,Column2
                         }
                     });
                     
+                    // Update charts and statistics displays
+                    updateCharts();
+                    updateStatistics();
+                    
+                    // Update scatter chart with regression line
+                    createScatterPlot();
+                    
                     // Only disable example button if we're analyzing real data (not example data)
                     if (!usingDummyData) {
                         const exampleButton = document.querySelector('.example-button');
@@ -1994,14 +2330,26 @@ Column1,Column2
                         updateChartButton.disabled = true;
                     }
                     
-                    // Display results
-                    displayResults();
-                    
                     // Show results container
                     resultsContainer.style.display = 'block';
+                    
+                    // Update sample count
+                    document.getElementById('totalSamplesCount').textContent = validData.length;
+                    
+                    // Update data range info
+                    document.getElementById('dataRangeInfo').innerHTML = `
+                        ${currentAnalyzerInput.value || 'Reference Method'}: ${Math.min(...currentValues).toFixed(2)} to ${Math.max(...currentValues).toFixed(2)}<br>
+                        ${newAnalyzerInput.value || 'Test Method'}: ${Math.min(...newValues).toFixed(2)} to ${Math.max(...newValues).toFixed(2)}
+                    `;
+                    
+                    // Show current analysis results summary
+                    displayResults();
+                    
+                    // Scroll to results
+                    resultsContainer.scrollIntoView({ behavior: 'smooth' });
                 } catch (error) {
-                    console.error('Error analyzing data:', error);
-                    alert('Error analyzing data: ' + error.message);
+                    console.error('Error during analysis:', error);
+                    alert('An error occurred during analysis: ' + error.message);
                 }
             }
             
@@ -3743,7 +4091,12 @@ Column1,Column2
                 if (exampleButton.textContent === 'Click to show example') {
                     // Load and analyze dummy data
                     loadDummyData();
-                    analyzeData();
+                    
+                    // Set the flag for dummy data (for free analysis)
+                    usingDummyData = true;
+                    
+                    // Call the analysis function directly without token check
+                    performAnalysis(currentAnalyzerSelect.value, newAnalyzerSelect.value);
                     
                     // Add example overlay to all sections
                     setTimeout(() => {
@@ -3983,6 +4336,69 @@ Column1,Column2
                 // Call the analyzeData function
                 analyzeData();
             });
+
+            // Token Purchase Modal Functions
+            window.showTokenPurchaseModal = function() {
+                const modal = document.getElementById('tokenPurchaseModal');
+                if (!modal) return;
+                
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                
+                // Reset selection
+                window.selectedTokenPackage = 0;
+                document.querySelectorAll('.token-package').forEach(pkg => {
+                    pkg.classList.remove('selected');
+                });
+                
+                // Disable purchase button
+                document.getElementById('purchaseButton').disabled = true;
+            };
+            
+            window.closeTokenPurchaseModal = function() {
+                const modal = document.getElementById('tokenPurchaseModal');
+                if (!modal) return;
+                
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            };
+            
+            window.selectTokenPackage = function(tokens) {
+                window.selectedTokenPackage = tokens;
+                
+                // Update selected visual
+                document.querySelectorAll('.token-package').forEach(pkg => {
+                    pkg.classList.remove('selected');
+                });
+                
+                // Find the clicked package and select it
+                document.querySelectorAll('.token-package').forEach(pkg => {
+                    const tokenCount = pkg.querySelector('.token-count').textContent;
+                    if (parseInt(tokenCount) === tokens) {
+                        pkg.classList.add('selected');
+                    }
+                });
+                
+                // Enable purchase button
+                const purchaseButton = document.getElementById('purchaseButton');
+                if (purchaseButton) {
+                    purchaseButton.disabled = false;
+                }
+            };
+            
+            // Handle logout
+            window.handleLogout = async function() {
+                try {
+                    const { error } = await window.supabaseClient.auth.signOut();
+                    if (error) {
+                        console.error('Logout error:', error);
+                    } else {
+                        updateUIForAuthState(false);
+                    }
+                } catch (err) {
+                    console.error('Unexpected logout error:', err);
+                }
+            };
         });
     </script>
     <!-- Authentication Modal -->
@@ -4065,5 +4481,42 @@ Column1,Column2
         }
     }, true);
     </script>
-  </body>
+
+    <!-- Token Purchase Modal -->
+    <div id="tokenPurchaseModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeTokenPurchaseModal()">&times;</button>
+            <h2>Purchase Tokens</h2>
+            <p>Select a token package to purchase:</p>
+            
+            <div class="token-packages">
+                <div class="token-package" onclick="selectTokenPackage(5)">
+                    <div class="token-count">5</div>
+                    <div class="token-price">$5.99</div>
+                    <div class="token-label">Basic</div>
+                </div>
+                <div class="token-package" onclick="selectTokenPackage(20)">
+                    <div class="token-count">20</div>
+                    <div class="token-price">$19.99</div>
+                    <div class="token-label">Popular</div>
+                    <div class="token-badge">20% OFF</div>
+                </div>
+                <div class="token-package" onclick="selectTokenPackage(50)">
+                    <div class="token-count">50</div>
+                    <div class="token-price">$39.99</div>
+                    <div class="token-label">Pro</div>
+                    <div class="token-badge">33% OFF</div>
+                </div>
+            </div>
+            
+            <div class="token-purchase-footer">
+                <button id="purchaseButton" class="purchase-button" disabled>
+                    Purchase Tokens
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+</body>
 </html>
