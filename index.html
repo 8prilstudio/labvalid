@@ -456,9 +456,21 @@
             position: relative;
         }
 
-        .header-buttons {
+        .logo-container {
             display: flex;
             align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .header-left {
+            flex: 0 0 150px; /* Fixed width for left side */
+        }
+        
+        .header-right {
+            flex: 0 0 150px; /* Fixed width for right side */
+            display: flex;
+            justify-content: flex-end;
         }
 
         .about-button {
@@ -474,13 +486,6 @@
 
         .about-button:hover {
             background-color: #008c8c;
-        }
-        
-        .logo-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
         }
         
         .logo {
@@ -1182,11 +1187,22 @@
         
         .login-button {
             background-color: var(--secondary-color);
-            margin-left: 0.5rem;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s, transform 0.2s;
+            min-width: 90px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            font-weight: 600;
         }
         
         .login-button:hover {
             background-color: #142b4e;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
         }
         
         .auth-message {
@@ -1403,12 +1419,16 @@
     </noscript>
     <div class="container">
         <div class="header">
+            <div class="header-left">
+                <button class="about-button" onclick="toggleAbout()">About</button>
+            </div>
+            
             <div class="logo-container">
                 <!-- Add fallback for logo in case path is an issue -->
                 <img src="LabValid-Logo(2).png" alt="LabValid Logo" class="logo" onerror="this.onerror=null; this.src=''; this.alt='Logo not found'; console.error('Logo image failed to load');">
             </div>
-            <div class="header-buttons">
-                <button class="about-button" onclick="toggleAbout()">About</button>
+            
+            <div class="header-right">
                 <button class="login-button" id="authButton">Login</button>
                 <div class="user-menu" id="userMenu">
                     <button class="about-button" id="userMenuButton">
