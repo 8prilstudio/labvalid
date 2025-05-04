@@ -198,7 +198,7 @@
                         }
                         
                         console.log('Initial token balance created:', data);
-                        updateTokenDisplay(initialTokens);
+                        window.updateTokenDisplay(initialTokens);
                     } catch (err) {
                         console.error('Unexpected error creating token balance:', err);
                     }
@@ -242,8 +242,8 @@
                                 console.warn('Could not save to localStorage:', e);
                             }
                             
-                            // Update display
-                            updateTokenDisplay(window.userTokenBalance);
+                            // Update display using global function
+                            window.updateTokenDisplay(window.userTokenBalance);
                         }
                     } catch (err) {
                         console.error('Unexpected error during token deduction:', err);
@@ -553,7 +553,7 @@
                             }
                             
                             // Update display
-                            updateTokenDisplay(newBalance);
+                            window.updateTokenDisplay(newBalance);
                             
                             // Show success message
                             alert(`Successfully purchased ${window.selectedTokenPackage} tokens!`);
@@ -4513,6 +4513,17 @@ Column1,Column2
     </div>
     
     <div class="card">
+    <!-- Fix for updateTokenDisplay function -->
+    <script>
+    // Define updateTokenDisplay function in the global scope first
+    window.updateTokenDisplay = function(tokenCount) {
+        const tokenBalance = document.getElementById('tokenBalance');
+        if (tokenBalance) {
+            tokenBalance.textContent = tokenCount;
+        }
+    };
+    </script>
+    
     <!-- Token system fix script - inline version -->
     <script>
     // Token system fix
@@ -4581,7 +4592,7 @@ Column1,Column2
                         // Use localStorage value if available
                         if (localTokens !== null) {
                             console.log('Using local token value:', localTokens);
-                            updateTokenDisplay(localTokens);
+                            window.updateTokenDisplay(localTokens);
                             return;
                         }
                         
@@ -4595,7 +4606,7 @@ Column1,Column2
                         console.log('Retrieved token balance from database:', data.tokens);
                         // Save to localStorage as backup
                         saveLocalTokens(userId, data.tokens);
-                        updateTokenDisplay(data.tokens);
+                        window.updateTokenDisplay(data.tokens);
                     } else {
                         console.log('No token data found, creating initial balance');
                         createInitialTokenBalance(userId);
@@ -4606,12 +4617,12 @@ Column1,Column2
                     // Use localStorage as fallback
                     if (localTokens !== null) {
                         console.log('Using local token value after error:', localTokens);
-                        updateTokenDisplay(localTokens);
+                        window.updateTokenDisplay(localTokens);
                     } else {
                         // Create default value
                         const defaultTokens = 5;
                         saveLocalTokens(userId, defaultTokens);
-                        updateTokenDisplay(defaultTokens);
+                        window.updateTokenDisplay(defaultTokens);
                     }
                 }
             };
@@ -4634,18 +4645,18 @@ Column1,Column2
                         console.warn('Database token creation failed:', error);
                         // Save to localStorage as fallback
                         saveLocalTokens(userId, initialTokens);
-                        updateTokenDisplay(initialTokens);
+                        window.updateTokenDisplay(initialTokens);
                         return;
                     }
                     
                     console.log('Token balance created/updated in database:', data);
                     saveLocalTokens(userId, initialTokens);
-                    updateTokenDisplay(initialTokens);
+                    window.updateTokenDisplay(initialTokens);
                 } catch (err) {
                     console.error('Token creation error:', err);
                     // Use localStorage as fallback
                     saveLocalTokens(userId, initialTokens);
-                    updateTokenDisplay(initialTokens);
+                    window.updateTokenDisplay(initialTokens);
                 }
             };
             
@@ -4710,8 +4721,8 @@ Column1,Column2
                     // Always update localStorage as backup
                     saveLocalTokens(userId, newBalance);
                     
-                    // Update display
-                    updateTokenDisplay(newBalance);
+                    // Update display using global function
+                    window.updateTokenDisplay(newBalance);
                     return true;
                 } catch (err) {
                     console.error('Error during token deduction:', err);
@@ -4761,10 +4772,13 @@ Column1,Column2
                         
                         // Update localStorage
                         localStorage.setItem(`tokens_${userId}`, tokens - 1);
+                        
+                        // Direct DOM manipulation instead of calling window.updateTokenDisplay
                         const tokenBalance = document.getElementById('tokenBalance');
                         if (tokenBalance) {
                             tokenBalance.textContent = tokens - 1;
                         }
+                        
                         return true;
                     }
                 } catch (e) {
@@ -4793,7 +4807,7 @@ Column1,Column2
                 return false;
             }
             
-            // Update display
+            // Direct DOM manipulation instead of calling window.updateTokenDisplay
             const tokenBalance = document.getElementById('tokenBalance');
             if (tokenBalance) {
                 tokenBalance.textContent = newBalance;
