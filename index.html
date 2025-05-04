@@ -4513,7 +4513,306 @@ Column1,Column2
     </div>
     
     <div class="card">
-    <!-- Token system fix script -->
-    <script src="token-fix.js"></script>
+    <!-- Token system fix script - inline version -->
+    <script>
+    // Token system fix
+    (function() {
+        console.log('Token system fix loading...');
+        
+        // Wait for DOM and Supabase client to be available
+        const checkInterval = setInterval(function() {
+            if (window.supabaseClient && document.readyState === 'complete') {
+                console.log('Starting token system fix...');
+                clearInterval(checkInterval);
+                initTokenFix();
+            }
+        }, 100);
+        
+        function initTokenFix() {
+            // Override the problematic functions
+            const originalFetchTokenBalance = window.fetchTokenBalance;
+            const originalCreateInitialTokenBalance = window.createInitialTokenBalance;
+            
+            // Check if user has tokens in localStorage
+            function getLocalTokens(userId) {
+                try {
+                    const tokens = localStorage.getItem(`tokens_${userId}`);
+                    return tokens ? parseInt(tokens, 10) : null;
+                } catch (e) {
+                    console.warn('Could not access localStorage:', e);
+                    return null;
+                }
+            }
+            
+            // Save tokens to localStorage
+            function saveLocalTokens(userId, tokenCount) {
+                try {
+                    localStorage.setItem(`tokens_${userId}`, tokenCount);
+                    return true;
+                } catch (e) {
+                    console.warn('Could not save to localStorage:', e);
+                    return false;
+                }
+            }
+            
+            // New fetch token balance function
+            window.fetchTokenBalance = async function(userId) {
+                console.log('Using enhanced token balance fetch for user:', userId);
+                
+                if (!userId) {
+                    console.error('No user ID provided for token fetch');
+                    return;
+                }
+                
+                // First check localStorage for a fallback value
+                const localTokens = getLocalTokens(userId);
+                
+                try {
+                    // Try to get from the database
+                    const { data, error } = await window.supabaseClient
+                        .from('user_tokens')
+                        .select('tokens')
+                        .eq('user_id', userId)
+                        .single();
+                    
+                    if (error) {
+                        console.warn('Database token fetch failed:', error);
+                        
+                        // Use localStorage value if available
+                        if (localTokens !== null) {
+                            console.log('Using local token value:', localTokens);
+                            updateTokenDisplay(localTokens);
+                            return;
+                        }
+                        
+                        // Try to create new token balance
+                        console.log('Attempting to create token balance...');
+                        createInitialTokenBalance(userId);
+                        return;
+                    }
+                    
+                    if (data) {
+                        console.log('Retrieved token balance from database:', data.tokens);
+                        // Save to localStorage as backup
+                        saveLocalTokens(userId, data.tokens);
+                        updateTokenDisplay(data.tokens);
+                    } else {
+                        console.log('No token data found, creating initial balance');
+                        createInitialTokenBalance(userId);
+                    }
+                } catch (err) {
+                    console.error('Token fetch error:', err);
+                    
+                    // Use localStorage as fallback
+                    if (localTokens !== null) {
+                        console.log('Using local token value after error:', localTokens);
+                        updateTokenDisplay(localTokens);
+                    } else {
+                        // Create default value
+                        const defaultTokens = 5;
+                        saveLocalTokens(userId, defaultTokens);
+                        updateTokenDisplay(defaultTokens);
+                    }
+                }
+            };
+            
+            // New create initial balance function
+            window.createInitialTokenBalance = async function(userId) {
+                console.log('Using enhanced token balance creation for user:', userId);
+                const initialTokens = 5;
+                
+                try {
+                    // Try to use the database first
+                    const { data, error } = await window.supabaseClient
+                        .from('user_tokens')
+                        .upsert([
+                            { user_id: userId, tokens: initialTokens }
+                        ], { onConflict: 'user_id' })
+                        .select();
+                    
+                    if (error) {
+                        console.warn('Database token creation failed:', error);
+                        // Save to localStorage as fallback
+                        saveLocalTokens(userId, initialTokens);
+                        updateTokenDisplay(initialTokens);
+                        return;
+                    }
+                    
+                    console.log('Token balance created/updated in database:', data);
+                    saveLocalTokens(userId, initialTokens);
+                    updateTokenDisplay(initialTokens);
+                } catch (err) {
+                    console.error('Token creation error:', err);
+                    // Use localStorage as fallback
+                    saveLocalTokens(userId, initialTokens);
+                    updateTokenDisplay(initialTokens);
+                }
+            };
+            
+            // Also override deductToken to work with our local storage fallback
+            const originalDeductToken = window.deductToken;
+            
+            window.deductToken = async function() {
+                try {
+                    const { data: { session } } = await window.supabaseClient.auth.getSession();
+                    
+                    if (!session) {
+                        console.error('No user session found');
+                        return false;
+                    }
+                    
+                    const userId = session.user.id;
+                    let tokenCount;
+                    let useLocalOnly = false;
+                    
+                    // Try to get current token balance from database
+                    const { data, error } = await window.supabaseClient
+                        .from('user_tokens')
+                        .select('tokens')
+                        .eq('user_id', userId)
+                        .single();
+                    
+                    if (error) {
+                        console.warn('Could not get tokens from database:', error);
+                        // Fall back to localStorage
+                        tokenCount = getLocalTokens(userId);
+                        if (tokenCount === null) {
+                            console.error('No token balance available');
+                            return false;
+                        }
+                        useLocalOnly = true;
+                    } else {
+                        tokenCount = data.tokens;
+                    }
+                    
+                    // Check if we have enough tokens
+                    if (tokenCount < 1) {
+                        alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
+                        return false;
+                    }
+                    
+                    // Deduct token
+                    const newBalance = tokenCount - 1;
+                    
+                    // Update balance in database if possible
+                    if (!useLocalOnly) {
+                        const { error: updateError } = await window.supabaseClient
+                            .from('user_tokens')
+                            .update({ tokens: newBalance })
+                            .eq('user_id', userId);
+                        
+                        if (updateError) {
+                            console.warn('Could not update database, using local only:', updateError);
+                            useLocalOnly = true;
+                        }
+                    }
+                    
+                    // Always update localStorage as backup
+                    saveLocalTokens(userId, newBalance);
+                    
+                    // Update display
+                    updateTokenDisplay(newBalance);
+                    return true;
+                } catch (err) {
+                    console.error('Error during token deduction:', err);
+                    return false;
+                }
+            };
+            
+            console.log('Token system fix loaded successfully');
+        }
+    })();
+    </script>
+
+    <!-- Fix for deductToken not being defined globally -->
+    <script>
+    // Global deductToken function to fix the error in analyzeData
+    // This ensures it's available even before the token-fix.js loads
+    window.deductToken = async function() {
+        try {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            
+            if (!session) {
+                console.error('No user session found');
+                return false;
+            }
+            
+            const userId = session.user.id;
+            
+            // Try to get current token balance from database
+            const { data: tokenData, error: fetchError } = await window.supabaseClient
+                .from('user_tokens')
+                .select('tokens')
+                .eq('user_id', userId)
+                .single();
+            
+            if (fetchError) {
+                console.error('Error fetching token balance:', fetchError);
+                
+                // Check localStorage as fallback
+                try {
+                    const localTokens = localStorage.getItem(`tokens_${userId}`);
+                    if (localTokens !== null) {
+                        const tokens = parseInt(localTokens, 10);
+                        if (tokens < 1) {
+                            alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
+                            return false;
+                        }
+                        
+                        // Update localStorage
+                        localStorage.setItem(`tokens_${userId}`, tokens - 1);
+                        const tokenBalance = document.getElementById('tokenBalance');
+                        if (tokenBalance) {
+                            tokenBalance.textContent = tokens - 1;
+                        }
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('Could not access localStorage:', e);
+                }
+                
+                alert('Error fetching your token balance. Please try again.');
+                return false;
+            }
+            
+            if (!tokenData || tokenData.tokens < 1) {
+                alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
+                return false;
+            }
+            
+            // Update token balance
+            const newBalance = tokenData.tokens - 1;
+            const { error: updateError } = await window.supabaseClient
+                .from('user_tokens')
+                .update({ tokens: newBalance })
+                .eq('user_id', userId);
+            
+            if (updateError) {
+                console.error('Error updating token balance:', updateError);
+                alert('Error updating your token balance. Please try again.');
+                return false;
+            }
+            
+            // Update display
+            const tokenBalance = document.getElementById('tokenBalance');
+            if (tokenBalance) {
+                tokenBalance.textContent = newBalance;
+            }
+            
+            // Also update localStorage as backup
+            try {
+                localStorage.setItem(`tokens_${userId}`, newBalance);
+            } catch (e) {
+                console.warn('Could not save to localStorage:', e);
+            }
+            
+            return true;
+        } catch (err) {
+            console.error('Unexpected error during token deduction:', err);
+            alert('An unexpected error occurred. Please try again.');
+            return false;
+        }
+    };
+    </script>
 </body>
 </html>
