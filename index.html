@@ -1778,7 +1778,7 @@
 
         <div class="info-overlay" id="infoOverlay" style="display: none;">
             <div class="info-modal">
-                <button class="close-button" onclick="toggleInfo()">Ã—</button>
+                <button class="close-button" onclick="toggleInfo()">×</button>
                 <div class="info-card" style="display: block; margin: 0;">
                     <h3>Excel Upload Guide</h3>
                     <p>To ensure successful data analysis, please follow these requirements when preparing your Excel file:</p>
@@ -1815,7 +1815,7 @@
                             </tbody>
                         </table>
                         <button class="download-template-btn" onclick="downloadTemplate()">
-                            ðŸ" Download Template
+                            📄 Download Template
                         </button>
                     </div>
                 </div>
@@ -1827,7 +1827,7 @@
                 <h2>Upload Data</h2>
                 <div class="button-group">
                     <button class="info-button" onclick="toggleInfo()" title="Show Upload Guide">
-                        â„¹ï¸
+                        ℹ️
                     </button>
                     <button class="example-button" onclick="toggleExample()" title="Show Example">
                         Click to show example
@@ -1920,12 +1920,12 @@ Column1,Column2
                         </thead>
                         <tbody>
                             <tr style="border-bottom: 1px solid #ddd;">
-                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Slope (Î²â‚)</td>
+                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Slope (β₁)</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Proportional bias</td>
                                 <td style="padding: 12px 15px;">Close to 1, CI includes 1</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #ddd; background-color: #f9f9f9;">
-                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Intercept (Î²â‚€)</td>
+                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Intercept (β₀)</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Constant bias</td>
                                 <td style="padding: 12px 15px;">Close to 0, CI includes 0</td>
                             </tr>
@@ -1937,12 +1937,12 @@ Column1,Column2
                             <tr style="border-bottom: 1px solid #ddd; background-color: #f9f9f9;">
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">P-value for slope/intercept</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Significance of bias</td>
-                                <td style="padding: 12px 15px;">p â‰¥ 0.05 (no significant bias)</td>
+                                <td style="padding: 12px 15px;">p ≥ 0.05 (no significant bias)</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #ddd;">
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">CUSUM test</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Linearity check</td>
-                                <td style="padding: 12px 15px;">p â‰¥ 0.05 (linear relationship)</td>
+                                <td style="padding: 12px 15px;">p ≥ 0.05 (linear relationship)</td>
                             </tr>
                             <tr style="background-color: #f9f9f9;">
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Bland-Altman (Mean Bias, LOA)</td>
