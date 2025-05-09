@@ -1685,6 +1685,67 @@
     </style>
   </head>
   <body>
+    <!-- Debug helper for Supabase issues -->
+    <script>
+    // Debug function to test Supabase connection and operations
+    async function testSupabaseConnection() {
+        try {
+            console.log("Testing Supabase connection...");
+            
+            // 1. Test if supabaseClient is properly initialized
+            if (!window.supabaseClient) {
+                console.error("Supabase client is not initialized");
+                return false;
+            }
+            
+            // 2. Test auth connection
+            try {
+                console.log("Testing auth connection...");
+                const { data, error } = await window.supabaseClient.auth.getSession();
+                
+                if (error) {
+                    console.error("Auth connection error:", error);
+                    return false;
+                }
+                
+                console.log("Auth connection successful:", data);
+            } catch (authError) {
+                console.error("Auth connection exception:", authError);
+                return false;
+            }
+            
+            // 3. Test database connection
+            try {
+                console.log("Testing database connection...");
+                const { data, error } = await window.supabaseClient
+                    .from('user_tokens')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    console.error("Database connection error:", error);
+                    return false;
+                }
+                
+                console.log("Database connection successful");
+            } catch (dbError) {
+                console.error("Database connection exception:", dbError);
+                return false;
+            }
+            
+            console.log("All Supabase connection tests passed");
+            return true;
+        } catch (e) {
+            console.error("Unexpected error during Supabase connection test:", e);
+            return false;
+        }
+    }
+    
+    // Run the test after the page loads
+    window.addEventListener('load', function() {
+        setTimeout(testSupabaseConnection, 2000); // Run after 2 seconds to allow other scripts to initialize
+    });
+    </script>
     <noscript>
         <div style="background:red;color:white;padding:20px;text-align:center;margin:20px;">
             <h2>JavaScript is Required</h2>
@@ -2204,26 +2265,40 @@ Column1,Column2
                     return;
                 }
                 
-                // Check if user is logged in
-                window.supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-                    if (!session) {
-                        alert('Please log in to perform analysis.');
-                        window.toggleAuthModal(true);
-                        return;
-                    }
-                    
-                    // Deduct token for analysis
-                    const tokenDeducted = await deductToken();
-                    if (!tokenDeducted) {
-                        return; // Don't proceed if token deduction failed
-                    }
-                    
-                    // Continue with analysis
-                    performAnalysis(currentColumn, newColumn);
-                }).catch(err => {
-                    console.error('Error checking session:', err);
-                    alert('An error occurred while checking your session. Please try again.');
-                });
+                // Use a safer approach to check the session
+                try {
+                    // Check if user is logged in
+                    window.supabaseClient.auth.getSession().then(async (response) => {
+                        try {
+                            // Safely check if session exists
+                            const session = response?.data?.session;
+                            
+                            if (!session) {
+                                alert('Please log in to perform analysis.');
+                                window.toggleAuthModal(true);
+                                return;
+                            }
+                            
+                            // Deduct token for analysis
+                            const tokenDeducted = await deductToken();
+                            if (!tokenDeducted) {
+                                return; // Don't proceed if token deduction failed
+                            }
+                            
+                            // Continue with analysis
+                            performAnalysis(currentColumn, newColumn);
+                        } catch (innerErr) {
+                            console.error('Error processing session data:', innerErr);
+                            alert('Error processing your session. Please try again or reload the page.');
+                        }
+                    }).catch(err => {
+                        console.error('Error checking session:', err);
+                        alert('An error occurred while checking your session. Please try again.');
+                    });
+                } catch (outerErr) {
+                    console.error('Unexpected error during session check:', outerErr);
+                    alert('An unexpected error occurred. Please reload the page and try again.');
+                }
             }
             
             // Split out the actual analysis logic to a separate function
@@ -4741,21 +4816,48 @@ Column1,Column2
     // This ensures it's available even before the token-fix.js loads
     window.deductToken = async function() {
         try {
-            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            // Safely get session data
+            const sessionResponse = await window.supabaseClient.auth.getSession();
             
-            if (!session) {
-                console.error('No user session found');
+            // Check if session response and data exist
+            if (!sessionResponse || !sessionResponse.data) {
+                console.error('Invalid session response structure');
+                alert('Error: Could not validate your session. Please log in again.');
                 return false;
             }
             
-            const userId = session.user.id;
+            const session = sessionResponse.data.session;
+            
+            if (!session) {
+                console.error('No user session found');
+                alert('Please log in to continue.');
+                return false;
+            }
+            
+            // Ensure user ID exists
+            const userId = session.user?.id;
+            if (!userId) {
+                console.error('Session exists but user ID is missing');
+                alert('Authentication error: Missing user information. Please log in again.');
+                return false;
+            }
             
             // Try to get current token balance from database
-            const { data: tokenData, error: fetchError } = await window.supabaseClient
-                .from('user_tokens')
-                .select('tokens')
-                .eq('user_id', userId)
-                .single();
+            let dbResponse;
+            try {
+                dbResponse = await window.supabaseClient
+                    .from('user_tokens')
+                    .select('tokens')
+                    .eq('user_id', userId)
+                    .single();
+            } catch (dbError) {
+                console.error('Database query error:', dbError);
+                alert('Error connecting to the database. Please try again later.');
+                return false;
+            }
+            
+            const fetchError = dbResponse?.error;
+            const tokenData = dbResponse?.data;
             
             if (fetchError) {
                 console.error('Error fetching token balance:', fetchError);
@@ -4796,10 +4898,21 @@ Column1,Column2
             
             // Update token balance
             const newBalance = tokenData.tokens - 1;
-            const { error: updateError } = await window.supabaseClient
-                .from('user_tokens')
-                .update({ tokens: newBalance })
-                .eq('user_id', userId);
+            
+            // Update in database
+            let updateResponse;
+            try {
+                updateResponse = await window.supabaseClient
+                    .from('user_tokens')
+                    .update({ tokens: newBalance })
+                    .eq('user_id', userId);
+            } catch (updateDbError) {
+                console.error('Database update error:', updateDbError);
+                alert('Error updating token balance. Please try again later.');
+                return false;
+            }
+            
+            const updateError = updateResponse?.error;
             
             if (updateError) {
                 console.error('Error updating token balance:', updateError);
