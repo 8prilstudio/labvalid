@@ -1040,7 +1040,7 @@
         }
 
         .info-card h3::before {
-            content: "ℹ️";
+            content: "â„¹ï¸";
             font-size: 1.25rem;
         }
 
@@ -1057,7 +1057,7 @@
         }
 
         .requirements-list li::before {
-            content: "✓";
+            content: "âœ“";
             color: var(--success-color);
             position: absolute;
             left: 0;
@@ -1778,7 +1778,7 @@
 
         <div class="info-overlay" id="infoOverlay" style="display: none;">
             <div class="info-modal">
-                <button class="close-button" onclick="toggleInfo()">×</button>
+                <button class="close-button" onclick="toggleInfo()">Ã—</button>
                 <div class="info-card" style="display: block; margin: 0;">
                     <h3>Excel Upload Guide</h3>
                     <p>To ensure successful data analysis, please follow these requirements when preparing your Excel file:</p>
@@ -1815,7 +1815,7 @@
                             </tbody>
                         </table>
                         <button class="download-template-btn" onclick="downloadTemplate()">
-                            📥 Download Template
+                            ðŸ" Download Template
                         </button>
                     </div>
                 </div>
@@ -1827,7 +1827,7 @@
                 <h2>Upload Data</h2>
                 <div class="button-group">
                     <button class="info-button" onclick="toggleInfo()" title="Show Upload Guide">
-                        ℹ️
+                        â„¹ï¸
                     </button>
                     <button class="example-button" onclick="toggleExample()" title="Show Example">
                         Click to show example
@@ -1920,12 +1920,12 @@ Column1,Column2
                         </thead>
                         <tbody>
                             <tr style="border-bottom: 1px solid #ddd;">
-                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Slope (β₁)</td>
+                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Slope (Î²â‚)</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Proportional bias</td>
                                 <td style="padding: 12px 15px;">Close to 1, CI includes 1</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #ddd; background-color: #f9f9f9;">
-                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Intercept (β₀)</td>
+                                <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Intercept (Î²â‚€)</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Constant bias</td>
                                 <td style="padding: 12px 15px;">Close to 0, CI includes 0</td>
                             </tr>
@@ -1937,12 +1937,12 @@ Column1,Column2
                             <tr style="border-bottom: 1px solid #ddd; background-color: #f9f9f9;">
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">P-value for slope/intercept</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Significance of bias</td>
-                                <td style="padding: 12px 15px;">p ≥ 0.05 (no significant bias)</td>
+                                <td style="padding: 12px 15px;">p â‰¥ 0.05 (no significant bias)</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #ddd;">
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">CUSUM test</td>
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Linearity check</td>
-                                <td style="padding: 12px 15px;">p ≥ 0.05 (linear relationship)</td>
+                                <td style="padding: 12px 15px;">p â‰¥ 0.05 (linear relationship)</td>
                             </tr>
                             <tr style="background-color: #f9f9f9;">
                                 <td style="padding: 12px 15px; border-right: 1px solid #ddd;">Bland-Altman (Mean Bias, LOA)</td>
@@ -2026,7 +2026,9 @@ Column1,Column2
                             <option value="90">90% CI</option>
                         </select>
                     </div>
-                    <div id="regressionStats" class="stats-container"></div>
+                    <div id="regressionStats" class="stats-container">
+                        <div id="regressionStatsContent"></div>
+                    </div>
                     
                     <!-- Add CUSUM plot container -->
                     <div style="margin-top: 20px;">
@@ -2083,7 +2085,9 @@ Column1,Column2
                             <option value="90">90% CI</option>
                         </select>
                     </div>
-                    <div id="blandAltmanStats" class="stats-container"></div>
+                    <div id="blandAltmanStats" class="stats-container">
+                        <div id="blandAltmanStatsContent"></div>
+                    </div>
                 </div>
             </div>
             
@@ -2862,9 +2866,9 @@ Column1,Column2
                             <h4>Passing-Bablok Regression</h4>
                             <ul style="list-style-type: none; padding-left: 0;">
                                 <li><strong>Slope:</strong> ${slopeRounded} (${ciLevelDisplay} CI: ${slopeCILower} to ${slopeCIUpper})</li>
-                                <li><strong>p-value (Slope≠1):</strong> ${slopePValue}</li>
+                                <li><strong>p-value (Slopeâ‰ 1):</strong> ${slopePValue}</li>
                                 <li><strong>Intercept:</strong> ${interceptRounded} (${ciLevelDisplay} CI: ${interceptCILower} to ${interceptCIUpper})</li>
-                                <li><strong>p-value (Intercept≠0):</strong> ${interceptPValue}</li>
+                                <li><strong>p-value (Interceptâ‰ 0):</strong> ${interceptPValue}</li>
                                 <li><strong>Correlation (r):</strong> ${rRounded}</li>
                                 <li><strong>CUSUM Test p-value:</strong> ${cusumPValue}</li>
                             </ul>
@@ -2908,10 +2912,10 @@ Column1,Column2
                         <h3>Statistical Results</h3>
                         <p><strong>Regression Equation:</strong> ${analysisResults.regression.equation}</p>
                         <p><strong>Slope:</strong> ${slopeRounded}</p>
-                        <p><strong>p-value (Slope≠1):</strong> ${slopePValue}</p>
+                        <p><strong>p-value (Slopeâ‰ 1):</strong> ${slopePValue}</p>
                         <p><strong>${ciLevelDisplay} CI for Slope:</strong> ${slopeCILower} to ${slopeCIUpper}</p>
                         <p><strong>Intercept:</strong> ${interceptRounded}</p>
-                        <p><strong>p-value (Intercept≠0):</strong> ${interceptPValue}</p>
+                        <p><strong>p-value (Interceptâ‰ 0):</strong> ${interceptPValue}</p>
                         <p><strong>${ciLevelDisplay} CI for Intercept:</strong> ${interceptCILower} to ${interceptCIUpper}</p>
                         <p><strong>Correlation Coefficient (r):</strong> ${rRounded}</p>
                         <p><strong>CUSUM Test for Linearity:</strong></p>
@@ -3580,6 +3584,56 @@ Column1,Column2
                 }
             }
             
+            function updateStatistics() {
+                if (!analysisResults) return;
+                
+                // Update Regression Statistics
+                const regressionStatsElement = document.getElementById('regressionStatsContent');
+                if (regressionStatsElement) {
+                    // Get selected confidence interval
+                    const selectedCI = ciSelector ? ciSelector.value : '95';
+                    const ciLevel = selectedCI === '95' ? '95' : '90';
+                    const ciLevelDisplay = selectedCI === '95' ? '95%' : '90%';
+                    
+                    let regressionHtml = `
+                        <p><strong>Regression Equation:</strong> ${analysisResults.regression.equation}</p>
+                        <p><strong>Slope:</strong> ${analysisResults.regression.slope.toFixed(4)}</p>
+                        <p><strong>p-value (Slopeâ‰ 1):</strong> ${analysisResults.regression.slopePValue.toFixed(4)}</p>
+                        <p><strong>${ciLevelDisplay} CI for Slope:</strong> ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].upper.toFixed(4)}</p>
+                        <p><strong>Intercept:</strong> ${analysisResults.regression.intercept.toFixed(4)}</p>
+                        <p><strong>p-value (Interceptâ‰ 0):</strong> ${analysisResults.regression.interceptPValue.toFixed(4)}</p>
+                        <p><strong>${ciLevelDisplay} CI for Intercept:</strong> ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].upper.toFixed(4)}</p>
+                        <p><strong>Correlation Coefficient (r):</strong> ${analysisResults.regression.r.toFixed(4)}</p>
+                        <p><strong>CUSUM Test p-value:</strong> ${analysisResults.regression.cusum.pValue.toFixed(4)} 
+                           ${parseFloat(analysisResults.regression.cusum.pValue) >= 0.05 ? 
+                             '<span class="text-success">(Linearity supported)</span>' : 
+                             '<span class="text-danger">(Non-linearity detected)</span>'}
+                        </p>
+                    `;
+                    regressionStatsElement.innerHTML = regressionHtml;
+                }
+                
+                // Update Bland-Altman Statistics
+                const blandAltmanStatsElement = document.getElementById('blandAltmanStatsContent');
+                if (blandAltmanStatsElement) {
+                    // Get selected confidence interval for Bland-Altman
+                    const baCILevel = baCISelector ? baCISelector.value : '95';
+                    const baLevel = baCILevel === '95' ? '95' : '90';
+                    const baLevelDisplay = baCILevel === '95' ? '95%' : '90%';
+                    
+                    let baHtml = `
+                        <p><strong>Mean Difference (Bias):</strong> ${analysisResults.blandAltman.meanDiff.toFixed(4)}</p>
+                        <p><strong>${baLevelDisplay} CI for Bias:</strong> ${analysisResults.blandAltman[`limits${baLevel}`].biasCI.lower.toFixed(4)} to ${analysisResults.blandAltman[`limits${baLevel}`].biasCI.upper.toFixed(4)}</p>
+                        <p><strong>Standard Deviation:</strong> ${analysisResults.blandAltman.stdDev.toFixed(4)}</p>
+                        <p><strong>Upper Limit of Agreement:</strong> ${analysisResults.blandAltman[`limits${baLevel}`].upper.toFixed(4)}</p>
+                        <p><strong>${baLevelDisplay} CI for Upper Limit:</strong> ${analysisResults.blandAltman[`limits${baLevel}`].upperCI.lower.toFixed(4)} to ${analysisResults.blandAltman[`limits${baLevel}`].upperCI.upper.toFixed(4)}</p>
+                        <p><strong>Lower Limit of Agreement:</strong> ${analysisResults.blandAltman[`limits${baLevel}`].lower.toFixed(4)}</p>
+                        <p><strong>${baLevelDisplay} CI for Lower Limit:</strong> ${analysisResults.blandAltman[`limits${baLevel}`].lowerCI.lower.toFixed(4)} to ${analysisResults.blandAltman[`limits${baLevel}`].lowerCI.upper.toFixed(4)}</p>
+                    `;
+                    blandAltmanStatsElement.innerHTML = baHtml;
+                }
+            }
+            
             // Export results to PDF
             function exportToPDF() {
                 if (!analysisResults) return;
@@ -3616,13 +3670,13 @@ Column1,Column2
                 yPos += 6;
                 pdf.text(`Slope: ${analysisResults.regression.slope.toFixed(4)}`, margin, yPos);
                 yPos += 6;
-                pdf.text(`p-value (Slope≠1): ${analysisResults.regression.slopePValue.toFixed(4)}`, margin, yPos);
+                pdf.text(`p-value (Slopeâ‰ 1): ${analysisResults.regression.slopePValue.toFixed(4)}`, margin, yPos);
                 yPos += 6;
                 pdf.text(`${ciLevelDisplay} CI for Slope: ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].upper.toFixed(4)}`, margin, yPos);
                 yPos += 6;
                 pdf.text(`Intercept: ${analysisResults.regression.intercept.toFixed(4)}`, margin, yPos);
                 yPos += 6;
-                pdf.text(`p-value (Intercept≠0): ${analysisResults.regression.interceptPValue.toFixed(4)}`, margin, yPos);
+                pdf.text(`p-value (Interceptâ‰ 0): ${analysisResults.regression.interceptPValue.toFixed(4)}`, margin, yPos);
                 yPos += 6;
                 pdf.text(`${ciLevelDisplay} CI for Intercept: ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].upper.toFixed(4)}`, margin, yPos);
                 yPos += 6;
@@ -3850,10 +3904,11 @@ Column1,Column2
                     <h2>Passing-Bablok Regression</h2>
                     <p>Regression Equation: ${analysisResults.regression.equation}</p>
                     <p>Slope: ${analysisResults.regression.slope.toFixed(4)}</p>
-                    <p>p-value (Slope≠1): ${analysisResults.regression.slopePValue.toFixed(4)}</p>
+                    <p>p-value (Slopeâ‰ 1): ${analysisResults.regression.slopePValue.toFixed(4)}</p>
+                    <p>p-value (Slopeâ‰ 1): ${analysisResults.regression.slopePValue.toFixed(4)}</p>
                     <p>${ciLevelDisplay} CI for Slope: ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].upper.toFixed(4)}</p>
                     <p>Intercept: ${analysisResults.regression.intercept.toFixed(4)}</p>
-                    <p>p-value (Intercept≠0): ${analysisResults.regression.interceptPValue.toFixed(4)}</p>
+                    <p>p-value (Interceptâ‰ 0): ${analysisResults.regression.interceptPValue.toFixed(4)}</p>
                     <p>${ciLevelDisplay} CI for Intercept: ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].upper.toFixed(4)}</p>
                     <p>Correlation Coefficient (r): ${analysisResults.regression.r.toFixed(4)}</p>
                     <p>CUSUM Test p-value: ${analysisResults.regression.cusum.pValue.toFixed(4)} ${parseFloat(analysisResults.regression.cusum.pValue) >= 0.05 ? '(Linearity supported)' : '(Non-linearity detected)'}</p>
@@ -4485,7 +4540,7 @@ Column1,Column2
                 </div>
                 <div class="form-group">
                     <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                    <input type="password" id="loginPassword" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
                 </div>
                 <button type="submit">Login</button>
                 <div class="auth-toggle">
@@ -4506,7 +4561,7 @@ Column1,Column2
                 </div>
                 <div class="form-group">
                     <label for="signupPassword">Password</label>
-                    <input type="password" id="signupPassword" required placeholder="••••••••">
+                    <input type="password" id="signupPassword" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
                 </div>
                 
                 <!-- Add hCaptcha -->
@@ -4941,5 +4996,5 @@ Column1,Column2
         }
     };
     </script>
-</body>
-</html>
+
+    // Function to update statistics displays
