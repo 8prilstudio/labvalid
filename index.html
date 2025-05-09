@@ -1040,7 +1040,7 @@
         }
 
         .info-card h3::before {
-            content: "â„¹ï¸";
+            content: "ℹ️";
             font-size: 1.25rem;
         }
 
@@ -1057,7 +1057,7 @@
         }
 
         .requirements-list li::before {
-            content: "âœ“";
+            content: "✓";
             color: var(--success-color);
             position: absolute;
             left: 0;
@@ -2866,9 +2866,9 @@ Column1,Column2
                             <h4>Passing-Bablok Regression</h4>
                             <ul style="list-style-type: none; padding-left: 0;">
                                 <li><strong>Slope:</strong> ${slopeRounded} (${ciLevelDisplay} CI: ${slopeCILower} to ${slopeCIUpper})</li>
-                                <li><strong>p-value (Slopeâ‰ 1):</strong> ${slopePValue}</li>
+                                <li><strong>p-value (Slope≠1):</strong> ${slopePValue}</li>
                                 <li><strong>Intercept:</strong> ${interceptRounded} (${ciLevelDisplay} CI: ${interceptCILower} to ${interceptCIUpper})</li>
-                                <li><strong>p-value (Interceptâ‰ 0):</strong> ${interceptPValue}</li>
+                                <li><strong>p-value (Intercept≠0):</strong> ${interceptPValue}</li>
                                 <li><strong>Correlation (r):</strong> ${rRounded}</li>
                                 <li><strong>CUSUM Test p-value:</strong> ${cusumPValue}</li>
                             </ul>
@@ -2912,10 +2912,10 @@ Column1,Column2
                         <h3>Statistical Results</h3>
                         <p><strong>Regression Equation:</strong> ${analysisResults.regression.equation}</p>
                         <p><strong>Slope:</strong> ${slopeRounded}</p>
-                        <p><strong>p-value (Slopeâ‰ 1):</strong> ${slopePValue}</p>
+                        <p><strong>p-value (Slope≠1):</strong> ${slopePValue}</p>
                         <p><strong>${ciLevelDisplay} CI for Slope:</strong> ${slopeCILower} to ${slopeCIUpper}</p>
                         <p><strong>Intercept:</strong> ${interceptRounded}</p>
-                        <p><strong>p-value (Interceptâ‰ 0):</strong> ${interceptPValue}</p>
+                        <p><strong>p-value (Intercept≠0):</strong> ${interceptPValue}</p>
                         <p><strong>${ciLevelDisplay} CI for Intercept:</strong> ${interceptCILower} to ${interceptCIUpper}</p>
                         <p><strong>Correlation Coefficient (r):</strong> ${rRounded}</p>
                         <p><strong>CUSUM Test for Linearity:</strong></p>
@@ -3615,10 +3615,10 @@ Column1,Column2
                     let regressionHtml = `
                         <p><strong>Regression Equation:</strong> ${analysisResults.regression.equation}</p>
                         <p><strong>Slope:</strong> ${analysisResults.regression.slope.toFixed(4)}</p>
-                        <p><strong>p-value (Slopeâ‰ 1):</strong> ${analysisResults.regression.slopePValue.toFixed(4)}</p>
+                        <p><strong>p-value (Slope≠1):</strong> ${analysisResults.regression.slopePValue.toFixed(4)}</p>
                         <p><strong>${ciLevelDisplay} CI for Slope:</strong> ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].upper.toFixed(4)}</p>
                         <p><strong>Intercept:</strong> ${analysisResults.regression.intercept.toFixed(4)}</p>
-                        <p><strong>p-value (Interceptâ‰ 0):</strong> ${analysisResults.regression.interceptPValue.toFixed(4)}</p>
+                        <p><strong>p-value (Intercept≠0):</strong> ${analysisResults.regression.interceptPValue.toFixed(4)}</p>
                         <p><strong>${ciLevelDisplay} CI for Intercept:</strong> ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].upper.toFixed(4)}</p>
                         <p><strong>Correlation Coefficient (r):</strong> ${analysisResults.regression.r.toFixed(4)}</p>
                         <p><strong>CUSUM Test p-value:</strong> ${analysisResults.regression.cusum.pValue.toFixed(4)} 
@@ -3687,13 +3687,13 @@ Column1,Column2
                 yPos += 6;
                 pdf.text(`Slope: ${analysisResults.regression.slope.toFixed(4)}`, margin, yPos);
                 yPos += 6;
-                pdf.text(`p-value (Slopeâ‰ 1): ${analysisResults.regression.slopePValue.toFixed(4)}`, margin, yPos);
+                pdf.text(`p-value (Slope≠1): ${analysisResults.regression.slopePValue.toFixed(4)}`, margin, yPos);
                 yPos += 6;
                 pdf.text(`${ciLevelDisplay} CI for Slope: ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].upper.toFixed(4)}`, margin, yPos);
                 yPos += 6;
                 pdf.text(`Intercept: ${analysisResults.regression.intercept.toFixed(4)}`, margin, yPos);
                 yPos += 6;
-                pdf.text(`p-value (Interceptâ‰ 0): ${analysisResults.regression.interceptPValue.toFixed(4)}`, margin, yPos);
+                pdf.text(`p-value (Intercept≠0): ${analysisResults.regression.interceptPValue.toFixed(4)}`, margin, yPos);
                 yPos += 6;
                 pdf.text(`${ciLevelDisplay} CI for Intercept: ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].upper.toFixed(4)}`, margin, yPos);
                 yPos += 6;
@@ -3921,11 +3921,11 @@ Column1,Column2
                     <h2>Passing-Bablok Regression</h2>
                     <p>Regression Equation: ${analysisResults.regression.equation}</p>
                     <p>Slope: ${analysisResults.regression.slope.toFixed(4)}</p>
-                    <p>p-value (Slopeâ‰ 1): ${analysisResults.regression.slopePValue.toFixed(4)}</p>
-                    <p>p-value (Slopeâ‰ 1): ${analysisResults.regression.slopePValue.toFixed(4)}</p>
+                    <p>p-value (Slope≠1): ${analysisResults.regression.slopePValue.toFixed(4)}</p>
+                    <p>p-value (Slope≠1): ${analysisResults.regression.slopePValue.toFixed(4)}</p>
                     <p>${ciLevelDisplay} CI for Slope: ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`slope${ciLevel}`].upper.toFixed(4)}</p>
                     <p>Intercept: ${analysisResults.regression.intercept.toFixed(4)}</p>
-                    <p>p-value (Interceptâ‰ 0): ${analysisResults.regression.interceptPValue.toFixed(4)}</p>
+                    <p>p-value (Intercept≠0): ${analysisResults.regression.interceptPValue.toFixed(4)}</p>
                     <p>${ciLevelDisplay} CI for Intercept: ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].lower.toFixed(4)} to ${analysisResults.regression.confidenceIntervals[`intercept${ciLevel}`].upper.toFixed(4)}</p>
                     <p>Correlation Coefficient (r): ${analysisResults.regression.r.toFixed(4)}</p>
                     <p>CUSUM Test p-value: ${analysisResults.regression.cusum.pValue.toFixed(4)} ${parseFloat(analysisResults.regression.cusum.pValue) >= 0.05 ? '(Linearity supported)' : '(Non-linearity detected)'}</p>
@@ -4557,7 +4557,7 @@ Column1,Column2
                 </div>
                 <div class="form-group">
                     <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
                 </div>
                 <button type="submit">Login</button>
                 <div class="auth-toggle">
@@ -4578,7 +4578,7 @@ Column1,Column2
                 </div>
                 <div class="form-group">
                     <label for="signupPassword">Password</label>
-                    <input type="password" id="signupPassword" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
+                    <input type="password" id="signupPassword" required placeholder="••••••••">
                 </div>
                 
                 <!-- Add hCaptcha -->
