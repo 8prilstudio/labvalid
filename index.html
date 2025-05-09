@@ -3105,6 +3105,23 @@ Column1,Column2
                 drawResidualPlot();
             }
             
+            // Function to create the scatter plot specifically
+            function createScatterPlot() {
+                if (!analysisResults) return;
+                
+                // Get user-defined values and ALWAYS respect them
+                // Always prefer the user input values - never override them with auto-detected values
+                const xMin = !isNaN(parseInt(xAxisMin.value)) ? parseInt(xAxisMin.value) : analysisResults.dataRanges.xMin;
+                const xMax = !isNaN(parseInt(xAxisMax.value)) ? parseInt(xAxisMax.value) : analysisResults.dataRanges.xMax;
+                const yMin = !isNaN(parseInt(yAxisMin.value)) ? parseInt(yAxisMin.value) : analysisResults.dataRanges.yMin;
+                const yMax = !isNaN(parseInt(yAxisMax.value)) ? parseInt(yAxisMax.value) : analysisResults.dataRanges.yMax;
+                const xInterval = !isNaN(parseInt(xAxisInterval.value)) ? parseInt(xAxisInterval.value) : 20;
+                const yInterval = !isNaN(parseInt(yAxisInterval.value)) ? parseInt(yAxisInterval.value) : 20;
+                
+                // Draw scatter plot
+                drawScatterPlot(xMin, xMax, yMin, yMax, xInterval, yInterval);
+            }
+            
             function drawScatterPlot(xMin, xMax, yMin, yMax, xInterval, yInterval) {
                 try {
                     // Clear previous chart if exists
