@@ -319,10 +319,15 @@
                 
                 // Show/hide the auth modal
                 window.toggleAuthModal = function(show) {
+                    console.log("toggleAuthModal called with show =", show);
                     const modal = document.getElementById('authModal');
-                    if (!modal) return; // Element doesn't exist
+                    if (!modal) {
+                        console.error("Auth modal element not found!");
+                        return; // Element doesn't exist
+                    }
                     
                     modal.style.display = show ? 'flex' : 'none';
+                    console.log("Auth modal display set to:", modal.style.display);
                     
                     // Reset to login form when opening
                     if (show) {
@@ -352,9 +357,13 @@
                     // Auth button click
                     const authButton = document.getElementById('authButton');
                     if (authButton) {
+                        console.log("Auth button found, adding click handler");
                         authButton.addEventListener('click', function() {
+                            console.log("Auth button clicked");
                             window.toggleAuthModal(true);
                         });
+                    } else {
+                        console.error("Auth button element not found!");
                     }
                     
                     // User menu button click
@@ -596,18 +605,18 @@
     
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-light: #3b82f6;
-            --primary-dark: #1d4ed8;
+            --primary-color: #1EAEAE; /* Updated to match teal from new logo */
+            --secondary-color: #1A2C4E; /* Updated to match navy from new logo */
+            --accent-color: #e91e63;
+            --background-color: #f8fafc;
+            --card-background: #ffffff;
+            --text-primary: #1A2C4E; /* Updated to match navy from new logo */
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
             --success-color: #10b981;
             --warning-color: #f59e0b;
             --error-color: #ef4444;
-            --text-color: #111827;
-            --text-light: #4b5563;
-            --border-color: #e5e7eb;
-            --bg-light: #f9fafb;
-            --bg-card: #ffffff;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --primary-dark: #18A0A0; /* Darker version of primary color for hover states */
         }
         
         body {
@@ -1191,31 +1200,56 @@
             right: 0;
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
+            display: none; /* Changed from flex to none */
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            overflow-y: auto;
         }
         
         .modal-content {
+            background-color: var(--card-background);
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 800px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Specific styling for the token purchase modal content */
+        #tokenPurchaseModal .modal-content {
             background-color: white;
             border-radius: 8px;
             padding: 24px;
             max-width: 500px;
             width: 90%;
-            position: relative;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
         .modal-close {
             position: absolute;
+            right: 1rem;
+            top: 1rem;
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            font-size: 1.5rem;
+            line-height: 1;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .modal-close:hover {
+            color: var(--text-primary);
+            background: transparent;
+        }
+        
+        /* Specific styling for token purchase modal close button */
+        #tokenPurchaseModal .modal-close {
             top: 12px;
             right: 12px;
-            background: none;
-            border: none;
             font-size: 24px;
-            cursor: pointer;
-            color: var(--text-light);
+            color: var(--text-secondary);
         }
         
         .token-packages {
@@ -4885,6 +4919,25 @@ Column1,Column2
             tokenBalance.textContent = tokenCount;
         }
     };
+    
+    // Testing function to check auth modal
+    window.testAuthModal = function() {
+        console.log("Testing auth modal visibility");
+        const authModal = document.getElementById('authModal');
+        if (authModal) {
+            console.log("Auth modal current display:", authModal.style.display);
+            authModal.style.display = 'flex';
+            console.log("Auth modal display set to flex");
+        } else {
+            console.error("Auth modal element not found!");
+        }
+    };
+    
+    // Call this after a short delay to allow page to load
+    setTimeout(function() {
+        console.log("Attempting to test auth modal...");
+        window.testAuthModal();
+    }, 2000);
     </script>
     
     <!-- Token system fix script - inline version -->
@@ -5098,136 +5151,45 @@ Column1,Column2
     })();
     </script>
 
-    <!-- Fix for deductToken not being defined globally -->
+    // Function to update statistics displays
+
+    <!-- Final debugging script -->
     <script>
-    // Global deductToken function to fix the error in analyzeData
-    // This ensures it's available even before the token-fix.js loads
-    window.deductToken = async function() {
-        try {
-            // Safely get session data
-            const sessionResponse = await window.supabaseClient.auth.getSession();
-            
-            // Check if session response and data exist
-            if (!sessionResponse || !sessionResponse.data) {
-                console.error('Invalid session response structure');
-                alert('Error: Could not validate your session. Please log in again.');
-                return false;
-            }
-            
-            const session = sessionResponse.data.session;
-            
-            if (!session) {
-                console.error('No user session found');
-                alert('Please log in to continue.');
-                return false;
-            }
-            
-            // Ensure user ID exists
-            const userId = session.user?.id;
-            if (!userId) {
-                console.error('Session exists but user ID is missing');
-                alert('Authentication error: Missing user information. Please log in again.');
-                return false;
-            }
-            
-            // Try to get current token balance from database
-            let dbResponse;
-            try {
-                dbResponse = await window.supabaseClient
-                    .from('user_tokens')
-                    .select('tokens')
-                    .eq('user_id', userId)
-                    .single();
-            } catch (dbError) {
-                console.error('Database query error:', dbError);
-                alert('Error connecting to the database. Please try again later.');
-                return false;
-            }
-            
-            const fetchError = dbResponse?.error;
-            const tokenData = dbResponse?.data;
-            
-            if (fetchError) {
-                console.error('Error fetching token balance:', fetchError);
+        // Check auth elements after page load
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                console.log("DEBUG: Checking auth elements at page load complete");
                 
-                // Check localStorage as fallback
-                try {
-                    const localTokens = localStorage.getItem(`tokens_${userId}`);
-                    if (localTokens !== null) {
-                        const tokens = parseInt(localTokens, 10);
-                        if (tokens < 1) {
-                            alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
-                            return false;
+                // Check auth button
+                const authButton = document.getElementById('authButton');
+                if (authButton) {
+                    console.log("DEBUG: Auth button found:", authButton);
+                    console.log("DEBUG: Auth button display:", authButton.style.display);
+                    
+                    // Add another click handler for testing
+                    authButton.addEventListener('click', function() {
+                        console.log("DEBUG: Auth button clicked (from final debug script)");
+                        // Force the auth modal to show
+                        const authModal = document.getElementById('authModal');
+                        if (authModal) {
+                            console.log("DEBUG: Setting auth modal display to flex");
+                            authModal.style.display = 'flex';
                         }
-                        
-                        // Update localStorage
-                        localStorage.setItem(`tokens_${userId}`, tokens - 1);
-                        
-                        // Direct DOM manipulation instead of calling window.updateTokenDisplay
-                        const tokenBalance = document.getElementById('tokenBalance');
-                        if (tokenBalance) {
-                            tokenBalance.textContent = tokens - 1;
-                        }
-                        
-                        return true;
-                    }
-                } catch (e) {
-                    console.warn('Could not access localStorage:', e);
+                    });
+                } else {
+                    console.error("DEBUG: Auth button not found!");
                 }
                 
-                alert('Error fetching your token balance. Please try again.');
-                return false;
-            }
-            
-            if (!tokenData || tokenData.tokens < 1) {
-                alert('You do not have enough tokens to perform this analysis. Please purchase more tokens.');
-                return false;
-            }
-            
-            // Update token balance
-            const newBalance = tokenData.tokens - 1;
-            
-            // Update in database
-            let updateResponse;
-            try {
-                updateResponse = await window.supabaseClient
-                    .from('user_tokens')
-                    .update({ tokens: newBalance })
-                    .eq('user_id', userId);
-            } catch (updateDbError) {
-                console.error('Database update error:', updateDbError);
-                alert('Error updating token balance. Please try again later.');
-                return false;
-            }
-            
-            const updateError = updateResponse?.error;
-            
-            if (updateError) {
-                console.error('Error updating token balance:', updateError);
-                alert('Error updating your token balance. Please try again.');
-                return false;
-            }
-            
-            // Direct DOM manipulation instead of calling window.updateTokenDisplay
-            const tokenBalance = document.getElementById('tokenBalance');
-            if (tokenBalance) {
-                tokenBalance.textContent = newBalance;
-            }
-            
-            // Also update localStorage as backup
-            try {
-                localStorage.setItem(`tokens_${userId}`, newBalance);
-            } catch (e) {
-                console.warn('Could not save to localStorage:', e);
-            }
-            
-            return true;
-        } catch (err) {
-            console.error('Unexpected error during token deduction:', err);
-            alert('An unexpected error occurred. Please try again.');
-            return false;
-        }
-    };
+                // Check auth modal
+                const authModal = document.getElementById('authModal');
+                if (authModal) {
+                    console.log("DEBUG: Auth modal found:", authModal);
+                    console.log("DEBUG: Auth modal display:", authModal.style.display);
+                } else {
+                    console.error("DEBUG: Auth modal not found!");
+                }
+            }, 3000);
+        });
     </script>
-
-    // Function to update statistics displays
+</body>
+</html>
