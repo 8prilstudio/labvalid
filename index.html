@@ -4689,6 +4689,9 @@ Column1,Column2
             // Edge Function URL
             const functionUrl = 'https://ttkegyxxrkhyxhkaqxyx.supabase.co/functions/v1/process-square-payment';
             
+            // Backup direct URL in case the main one fails
+            const backupFunctionUrl = 'https://ttkegyxxrkhyxhkaqxyx.functions.supabase.co/process-square-payment';
+            
             // Initialize Square when page loads
             document.addEventListener('DOMContentLoaded', async function() {
                 initializeSquare();
@@ -4807,6 +4810,7 @@ Column1,Column2
                     }
                     
                     const userId = session.user.id;
+                    console.log("User ID for payment:", userId);
                     
                     // Get payment token from Square
                     console.log("Tokenizing card payment...");
@@ -4814,42 +4818,84 @@ Column1,Column2
                     if (result.status !== 'OK') {
                         throw new Error(result.errors ? result.errors[0].message : 'Payment tokenization failed');
                     }
-                    console.log("Card tokenized successfully");
-                    
+                    console.log("Card tokenized successfully with token:", result.token);
                     
                     // Call your Supabase Edge Function
-                    console.log("Calling payment processing function...");
-                    const response = await fetch(functionUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            sourceId: result.token,
-                            tokenPackage: window.selectedTokenPackage,
-                            userId: userId
-                        })
-                    });
+                    console.log("Calling payment processing function at:", functionUrl);
+                    const paymentData = {
+                        sourceId: result.token,
+                        tokenPackage: window.selectedTokenPackage,
+                        userId: userId
+                    };
+                    console.log("Payment data being sent:", paymentData);
                     
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Payment processing failed');
+                    try {
+                        // Try the main URL first
+                        let response;
+                        let useBackupUrl = false;
+                        
+                        try {
+                            response = await fetch(functionUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(paymentData)
+                            });
+                        } catch (mainUrlError) {
+                            console.error("Error with main URL:", mainUrlError);
+                            console.log("Trying backup URL:", backupFunctionUrl);
+                            useBackupUrl = true;
+                        }
+                        
+                        // If main URL failed, try backup URL
+                        if (useBackupUrl) {
+                            response = await fetch(backupFunctionUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(paymentData)
+                            });
+                        }
+                        
+                        console.log("Response status:", response.status);
+                        
+                        // Try to get response text regardless of status
+                        const responseText = await response.text();
+                        console.log("Raw response:", responseText);
+                        
+                        // Parse JSON if possible
+                        let data;
+                        try {
+                            data = JSON.parse(responseText);
+                            console.log("Parsed response data:", data);
+                        } catch (e) {
+                            console.error("Failed to parse response as JSON:", e);
+                            throw new Error('Invalid response from payment server');
+                        }
+                        
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Payment processing failed');
+                        }
+                        
+                        // Show success message
+                        updatePaymentStatus(`Payment successful! You now have ${data.newTokenCount} tokens.`);
+                        
+                        // Update token display
+                        window.updateTokenDisplay(data.newTokenCount);
+                        
+                        // Reset button
+                        document.getElementById('purchaseButton').textContent = 'Purchase Tokens';
+                        
+                        // Close modal after a delay
+                        setTimeout(() => {
+                            closeTokenPurchaseModal();
+                        }, 3000);
+                    } catch (fetchError) {
+                        console.error("Fetch error:", fetchError);
+                        throw new Error(`Error communicating with payment server: ${fetchError.message}`);
                     }
-                    
-                    // Show success message
-                    updatePaymentStatus(`Payment successful! You now have ${data.newTokenCount} tokens.`);
-                    
-                    // Update token display
-                    window.updateTokenDisplay(data.newTokenCount);
-                    
-                    // Reset button
-                    document.getElementById('purchaseButton').textContent = 'Purchase Tokens';
-                    
-                    // Close modal after a delay
-                    setTimeout(() => {
-                        closeTokenPurchaseModal();
-                    }, 3000);
                     
                 } catch (err) {
                     console.error('Payment error:', err);
