@@ -4628,6 +4628,9 @@ Column1,Column2
                     paymentStatus.textContent = '';
                     paymentStatus.className = '';
                 }
+                
+                // Initialize card payment form when modal opens
+                initCardPayment();
             };
             
             window.closeTokenPurchaseModal = function() {
@@ -4663,6 +4666,7 @@ Column1,Column2
             // Square Payment Integration
             let square;
             let card;
+            let squareInitialized = false;
             
             // Square credentials
             const applicationId = 'sandbox-sq0idb-MsZR9XT1bXJhjjYtQo_e4A';
@@ -4672,21 +4676,63 @@ Column1,Column2
             
             // Initialize Square when page loads
             document.addEventListener('DOMContentLoaded', async function() {
+                initializeSquare();
+            });
+            
+            // Function to initialize Square
+            async function initializeSquare() {
                 try {
+                    console.log("Initializing Square...");
+                    if (!window.Square) {
+                        console.error("Square SDK not loaded");
+                        return;
+                    }
+                    
                     square = await Square.initialize({
                         applicationId: applicationId,
                         locationId: locationId,
                         inputClass: 'sq-input'
                     });
                     
-                    // Initialize card payment method
-                    card = await square.payments.card();
-                    await card.attach('#card-container');
-                    console.log('Square payment form initialized');
+                    console.log("Square initialized successfully");
+                    squareInitialized = true;
                 } catch (e) {
                     console.error('Square initialization error:', e);
                 }
-            });
+            }
+            
+            // Function to initialize card payment
+            async function initCardPayment() {
+                try {
+                    const cardContainer = document.getElementById('card-container');
+                    if (!cardContainer) {
+                        console.error("Card container not found");
+                        return;
+                    }
+                    
+                    // Clear previous content
+                    cardContainer.innerHTML = '';
+                    
+                    // Check if Square is initialized
+                    if (!squareInitialized) {
+                        console.log("Square not initialized yet, attempting to initialize...");
+                        await initializeSquare();
+                        if (!squareInitialized) {
+                            updatePaymentStatus("Payment system unavailable. Please try again later.", true);
+                            return;
+                        }
+                    }
+                    
+                    // Initialize card payment method
+                    console.log("Initializing card payment form...");
+                    card = await square.payments.card();
+                    await card.attach('#card-container');
+                    console.log("Card payment form initialized successfully");
+                } catch (e) {
+                    console.error('Card payment initialization error:', e);
+                    updatePaymentStatus("Failed to initialize payment form. Please try again later.", true);
+                }
+            }
             
             // Update status message
             function updatePaymentStatus(message, isError = false) {
@@ -4717,6 +4763,15 @@ Column1,Column2
                         throw new Error('Please select a token package');
                     }
                     
+                    // Check if card is initialized
+                    if (!card) {
+                        console.log("Card not initialized, attempting to initialize...");
+                        await initCardPayment();
+                        if (!card) {
+                            throw new Error('Payment system unavailable. Please try again later.');
+                        }
+                    }
+                    
                     // Get current user
                     const { data: { session } } = await window.supabaseClient.auth.getSession();
                     
@@ -4727,12 +4782,15 @@ Column1,Column2
                     const userId = session.user.id;
                     
                     // Get payment token from Square
+                    console.log("Tokenizing card payment...");
                     const result = await card.tokenize();
                     if (!result.token) {
                         throw new Error('Payment tokenization failed');
                     }
+                    console.log("Card tokenized successfully");
                     
                     // Call your Supabase Edge Function
+                    console.log("Calling payment processing function...");
                     const response = await fetch(functionUrl, {
                         method: 'POST',
                         headers: {
