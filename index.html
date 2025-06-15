@@ -7,8 +7,23 @@
     <!-- Add hCaptcha script -->
     <script src="https://js.hcaptcha.com/1/api.js?onload=onHCaptchaLoad" async defer></script>
     
-    <!-- Add Square SDK -->
-    <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+    <!-- Add Square SDK - updated to latest version -->
+    <script type="text/javascript">
+        window.squareSDKLoaded = false;
+        window.addEventListener('DOMContentLoaded', function() {
+            // Create the script element for Square SDK
+            const script = document.createElement('script');
+            script.src = 'https://web.squarecdn.com/v1/square.js';
+            script.onload = function() {
+                console.log("Square SDK loaded successfully");
+                window.squareSDKLoaded = true;
+            };
+            script.onerror = function() {
+                console.error("Failed to load Square SDK");
+            };
+            document.head.appendChild(script);
+        });
+    </script>
     
     <!-- DEBUGGING SCRIPT - REMOVE AFTER FIXING ISSUES -->
     <script>
@@ -4683,21 +4698,32 @@ Column1,Column2
             async function initializeSquare() {
                 try {
                     console.log("Initializing Square...");
+                    
+                    // Wait for SDK to load if it's not already loaded
+                    if (!window.squareSDKLoaded) {
+                        console.log("Waiting for Square SDK to load...");
+                        for (let i = 0; i < 10; i++) {
+                            if (window.squareSDKLoaded) break;
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        }
+                    }
+                    
+                    // Check if Square SDK is loaded
                     if (!window.Square) {
-                        console.error("Square SDK not loaded");
+                        console.error("Square SDK not loaded after waiting");
+                        updatePaymentStatus("Payment system unavailable. Please refresh the page and try again.", true);
                         return;
                     }
                     
-                    square = await Square.initialize({
-                        applicationId: applicationId,
-                        locationId: locationId,
-                        inputClass: 'sq-input'
-                    });
-                    
+                    // Use the correct initialization method for Square Web Payments SDK
+                    square = await window.Square.payments(applicationId, locationId);
                     console.log("Square initialized successfully");
                     squareInitialized = true;
+                    return true;
                 } catch (e) {
                     console.error('Square initialization error:', e);
+                    updatePaymentStatus("Payment system unavailable. Please try again later.", true);
+                    return false;
                 }
             }
             
@@ -4723,9 +4749,9 @@ Column1,Column2
                         }
                     }
                     
-                    // Initialize card payment method
+                    // Initialize card payment method using the correct method
                     console.log("Initializing card payment form...");
-                    card = await square.payments.card();
+                    card = await square.card();
                     await card.attach('#card-container');
                     console.log("Card payment form initialized successfully");
                 } catch (e) {
@@ -4784,10 +4810,11 @@ Column1,Column2
                     // Get payment token from Square
                     console.log("Tokenizing card payment...");
                     const result = await card.tokenize();
-                    if (!result.token) {
-                        throw new Error('Payment tokenization failed');
+                    if (!result.status === 'OK') {
+                        throw new Error(result.errors ? result.errors[0].message : 'Payment tokenization failed');
                     }
                     console.log("Card tokenized successfully");
+                    
                     
                     // Call your Supabase Edge Function
                     console.log("Calling payment processing function...");
