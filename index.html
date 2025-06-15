@@ -4830,33 +4830,23 @@ Column1,Column2
                     console.log("Payment data being sent:", paymentData);
                     
                     try {
-                        // Try the main URL first
+                        // Use a CORS proxy to bypass CORS restrictions
+                        const proxyUrl = "https://corsproxy.io/?";
+                        const targetUrl = encodeURIComponent(functionUrl);
+                        
+                        // Try with the proxy
                         let response;
-                        let useBackupUrl = false;
-                        
                         try {
-                            response = await fetch(functionUrl, {
+                            response = await fetch(proxyUrl + targetUrl, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify(paymentData)
                             });
-                        } catch (mainUrlError) {
-                            console.error("Error with main URL:", mainUrlError);
-                            console.log("Trying backup URL:", backupFunctionUrl);
-                            useBackupUrl = true;
-                        }
-                        
-                        // If main URL failed, try backup URL
-                        if (useBackupUrl) {
-                            response = await fetch(backupFunctionUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(paymentData)
-                            });
+                        } catch (proxyError) {
+                            console.error("Error with proxy:", proxyError);
+                            throw new Error("Failed to connect to payment server");
                         }
                         
                         console.log("Response status:", response.status);
