@@ -5313,5 +5313,114 @@ Column1,Column2
             }, 3000);
         });
     </script>
+
+    <!-- Add this right after the existing auth modal script -->
+    <script>
+    // Add this right after the existing auth modal script
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded, initializing auth system...');
+        
+        // Initialize auth button
+        const authButton = document.getElementById('authButton');
+        if (authButton) {
+            console.log('Auth button found, adding click handler');
+            authButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Auth button clicked');
+                window.toggleAuthModal(true);
+            });
+        } else {
+            console.error('Auth button not found in DOM');
+        }
+        
+        // Initialize auth modal
+        const authModal = document.getElementById('authModal');
+        if (authModal) {
+            console.log('Auth modal found in DOM');
+            // Ensure modal is hidden by default
+            authModal.style.display = 'none';
+            
+            // Add click outside to close
+            authModal.addEventListener('click', function(e) {
+                if (e.target === authModal) {
+                    window.toggleAuthModal(false);
+                }
+            });
+        } else {
+            console.error('Auth modal not found in DOM');
+        }
+        
+        // Initialize forms
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const resetPasswordForm = document.getElementById('resetPasswordForm');
+        
+        if (!loginForm || !signupForm || !resetPasswordForm) {
+            console.error('One or more auth forms not found in DOM');
+        } else {
+            console.log('All auth forms found in DOM');
+        }
+        
+        // Test auth modal visibility
+        window.testAuthModal = function() {
+            console.log('Testing auth modal...');
+            const modal = document.getElementById('authModal');
+            if (modal) {
+                console.log('Current modal display:', modal.style.display);
+                modal.style.display = 'flex';
+                console.log('Modal display set to flex');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    console.log('Modal display set back to none');
+                }, 2000);
+            } else {
+                console.error('Auth modal not found during test');
+            }
+        };
+    });
+
+    // Update the toggleAuthModal function to be more robust
+    window.toggleAuthModal = function(show) {
+        console.log('toggleAuthModal called with show =', show);
+        const modal = document.getElementById('authModal');
+        if (!modal) {
+            console.error('Auth modal element not found!');
+            return;
+        }
+        
+        // Use a more reliable way to show/hide the modal
+        if (show) {
+            modal.style.display = 'flex';
+            modal.style.opacity = '1';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        } else {
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // Restore scrolling
+            }, 300); // Match the transition duration
+        }
+        
+        console.log('Auth modal display set to:', modal.style.display);
+        
+        // Reset to login form when opening
+        if (show) {
+            window.toggleForms('login');
+        }
+    };
+
+    // Add CSS transition for smooth modal appearance
+    const style = document.createElement('style');
+    style.textContent = `
+        .auth-modal-overlay {
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+        }
+        .auth-modal-overlay[style*="display: flex"] {
+            opacity: 1;
+        }
+    `;
+    document.head.appendChild(style);
+    </script>
 </body>
 </html>
