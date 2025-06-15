@@ -13,7 +13,7 @@
         window.addEventListener('DOMContentLoaded', function() {
             // Create the script element for Square SDK
             const script = document.createElement('script');
-            script.src = 'https://web.squarecdn.com/v1/square.js';
+            script.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
             script.onload = function() {
                 console.log("Square SDK loaded successfully");
                 window.squareSDKLoaded = true;
@@ -4716,6 +4716,7 @@ Column1,Column2
                     }
                     
                     // Use the correct initialization method for Square Web Payments SDK
+                    // Explicitly set the environment to sandbox
                     square = await window.Square.payments(applicationId, locationId);
                     console.log("Square initialized successfully");
                     squareInitialized = true;
@@ -4810,7 +4811,7 @@ Column1,Column2
                     // Get payment token from Square
                     console.log("Tokenizing card payment...");
                     const result = await card.tokenize();
-                    if (!result.status === 'OK') {
+                    if (result.status !== 'OK') {
                         throw new Error(result.errors ? result.errors[0].message : 'Payment tokenization failed');
                     }
                     console.log("Card tokenized successfully");
